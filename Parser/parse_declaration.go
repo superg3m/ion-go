@@ -28,12 +28,17 @@ func (parser *Parser) parseVariableDeclaration() AST.Declaration {
 	parser.expect(Token.VAR)
 	ident := parser.expect(Token.IDENTIFIER)
 	parser.expect(Token.COLON)
-	dataType := parser.parseDataType()
+	var dataType AST.DataType
+	if parser.peekNthToken(0).Kind == Token.EQUALS {
+		parser.expect(Token.EQUALS)
+	} else {
+		dataType = parser.parseDataType()
+	}
 
-	parser.expect(Token.EQUALS)
 	rhs := parser.parseExpression()
+	parser.expect(Token.SEMI_COLON)
 
-	return AST.DeclarationVariable{
+	return &AST.DeclarationVariable{
 		Name:     ident.Lexeme,
 		DeclType: dataType,
 		RHS:      rhs,
@@ -46,9 +51,9 @@ func (parser *Parser) parseFunctionDeclaration() AST.Declaration {
 	params := parser.parseParameters()
 	parser.expect(Token.RIGHT_ARROW)
 	dataType := parser.parseDataType()
-	block := parser.parseStatementBlock().(AST.StatementBlock)
+	block := parser.parseStatementBlock().(*AST.StatementBlock)
 
-	return AST.DeclarationFunction{
+	return &AST.DeclarationFunction{
 		Name:       ident.Lexeme,
 		Parameters: params,
 		ReturnType: dataType,

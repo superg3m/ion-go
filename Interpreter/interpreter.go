@@ -6,53 +6,53 @@ import (
 	"ion-go/Token"
 )
 
-var global_functions map[string]AST.DeclarationFunction
+var globalFunctions map[string]*AST.DeclarationFunction
 
 func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression) AST.Expression {
 	switch kind {
 	case Token.PLUS, Token.MINUS, Token.STAR, Token.DIVISION,
 		Token.LESS_THAN, Token.LESS_THAN_EQUALS, Token.GREATER_THAN, Token.GREATER_THAN_EQUALS:
 		// Try int + int
-		if lhs, ok1 := left.(AST.ExpressionInteger); ok1 {
-			if rhs, ok2 := right.(AST.ExpressionInteger); ok2 {
-				return evaluateIntegers(kind, lhs, rhs)
+		if lhs, ok1 := left.(*AST.ExpressionInteger); ok1 {
+			if rhs, ok2 := right.(*AST.ExpressionInteger); ok2 {
+				return evaluateIntegers(kind, lhs.Value, rhs.Value)
 			}
 		}
 
 		// Try float + float
-		if lhs, ok1 := left.(AST.ExpressionFloat); ok1 {
-			if rhs, ok2 := right.(AST.ExpressionFloat); ok2 {
-				return evaluateFloats(kind, lhs, rhs)
+		if lhs, ok1 := left.(*AST.ExpressionFloat); ok1 {
+			if rhs, ok2 := right.(*AST.ExpressionFloat); ok2 {
+				return evaluateFloats(kind, lhs.Value, rhs.Value)
 			}
 		}
 
 		// Mixed int + float (promote int to float)
-		if lhs, ok1 := left.(AST.ExpressionInteger); ok1 {
-			if rhs, ok2 := right.(AST.ExpressionFloat); ok2 {
-				return evaluateFloats(kind, AST.ExpressionFloat(lhs), rhs)
+		if lhs, ok1 := left.(*AST.ExpressionInteger); ok1 {
+			if rhs, ok2 := right.(*AST.ExpressionFloat); ok2 {
+				return evaluateFloats(kind, float32(lhs.Value), rhs.Value)
 			}
 		}
 
 		// Mixed float + int (promote int to float)
-		if lhs, ok1 := left.(AST.ExpressionFloat); ok1 {
-			if rhs, ok2 := right.(AST.ExpressionInteger); ok2 {
-				return evaluateFloats(kind, lhs, AST.ExpressionFloat(rhs))
+		if lhs, ok1 := left.(*AST.ExpressionFloat); ok1 {
+			if rhs, ok2 := right.(*AST.ExpressionInteger); ok2 {
+				return evaluateFloats(kind, lhs.Value, float32(rhs.Value))
 			}
 		}
 
 		panic(fmt.Sprintf("invalid operands for %v: %T and %T", kind, left, right))
 
 	case Token.LOGICAL_AND, Token.LOGICAL_OR:
-		lhs, ok1 := left.(AST.ExpressionBoolean)
-		rhs, ok2 := right.(AST.ExpressionBoolean)
+		lhs, ok1 := left.(*AST.ExpressionBoolean)
+		rhs, ok2 := right.(*AST.ExpressionBoolean)
 		if !ok1 || !ok2 {
 			panic(fmt.Sprintf("expected booleans for %v, got %T and %T", kind, left, right))
 		}
 
 		if kind == Token.LOGICAL_AND {
-			return lhs && rhs
+			return &AST.ExpressionBoolean{Value: lhs.Value && rhs.Value}
 		} else {
-			return lhs || rhs
+			return &AST.ExpressionBoolean{Value: lhs.Value || rhs.Value}
 		}
 
 	default:
@@ -60,49 +60,49 @@ func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression)
 	}
 }
 
-func evaluateIntegers(kind Token.TokenType, lhs, rhs AST.ExpressionInteger) AST.Expression {
+func evaluateIntegers(kind Token.TokenType, lhs, rhs int) AST.Expression {
 	switch kind {
 	case Token.PLUS:
-		return lhs + rhs
+		return &AST.ExpressionInteger{Value: lhs + rhs}
 	case Token.MINUS:
-		return lhs - rhs
+		return &AST.ExpressionInteger{Value: lhs - rhs}
 	case Token.STAR:
-		return lhs * rhs
+		return &AST.ExpressionInteger{Value: lhs * rhs}
 	case Token.DIVISION:
-		return lhs / rhs
+		return &AST.ExpressionInteger{Value: lhs / rhs}
 	case Token.EQUALS_EQUALS:
-		return AST.ExpressionBoolean(lhs == rhs)
+		return &AST.ExpressionBoolean{Value: lhs == rhs}
 	case Token.LESS_THAN:
-		return AST.ExpressionBoolean(lhs < rhs)
+		return &AST.ExpressionBoolean{Value: lhs < rhs}
 	case Token.LESS_THAN_EQUALS:
-		return AST.ExpressionBoolean(lhs <= rhs)
+		return &AST.ExpressionBoolean{Value: lhs <= rhs}
 	case Token.GREATER_THAN:
-		return AST.ExpressionBoolean(lhs > rhs)
+		return &AST.ExpressionBoolean{Value: lhs > rhs}
 	case Token.GREATER_THAN_EQUALS:
-		return AST.ExpressionBoolean(lhs >= rhs)
+		return &AST.ExpressionBoolean{Value: lhs >= rhs}
 	}
 
 	panic("unreachable")
 }
 
-func evaluateFloats(kind Token.TokenType, lhs, rhs AST.ExpressionFloat) AST.Expression {
+func evaluateFloats(kind Token.TokenType, lhs, rhs float32) AST.Expression {
 	switch kind {
 	case Token.PLUS:
-		return lhs + rhs
+		return &AST.ExpressionFloat{Value: lhs + rhs}
 	case Token.MINUS:
-		return lhs - rhs
+		return &AST.ExpressionFloat{Value: lhs - rhs}
 	case Token.STAR:
-		return lhs * rhs
+		return &AST.ExpressionFloat{Value: lhs * rhs}
 	case Token.DIVISION:
-		return lhs / rhs
+		return &AST.ExpressionFloat{Value: lhs / rhs}
 	case Token.LESS_THAN:
-		return AST.ExpressionBoolean(lhs < rhs)
+		return &AST.ExpressionBoolean{Value: lhs < rhs}
 	case Token.LESS_THAN_EQUALS:
-		return AST.ExpressionBoolean(lhs <= rhs)
+		return &AST.ExpressionBoolean{Value: lhs <= rhs}
 	case Token.GREATER_THAN:
-		return AST.ExpressionBoolean(lhs > rhs)
+		return &AST.ExpressionBoolean{Value: lhs > rhs}
 	case Token.GREATER_THAN_EQUALS:
-		return AST.ExpressionBoolean(lhs >= rhs)
+		return &AST.ExpressionBoolean{Value: lhs >= rhs}
 	}
 	panic("unreachable")
 }
@@ -113,12 +113,12 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 	}
 
 	switch v := e.(type) {
-	case AST.ExpressionInteger, AST.ExpressionFloat, AST.ExpressionBoolean:
+	case *AST.ExpressionInteger, *AST.ExpressionFloat, *AST.ExpressionBoolean:
 		return v
-	case AST.ExpressionIdentifier:
+	case *AST.ExpressionIdentifier:
 		return scope.get(v.Name)
-	case AST.ExpressionFunctionCall:
-		functionDeclaration := global_functions[v.Name]
+	case *AST.ExpressionFunctionCall:
+		functionDeclaration := globalFunctions[v.Name]
 		argCount := len(v.Arguments)
 		paramCount := len(functionDeclaration.Parameters)
 
@@ -135,21 +135,21 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 		return interpretNodes(functionDeclaration.Block.Body, &functionScope)
 
-	case AST.ExpressionLen:
+	case *AST.ExpressionLen:
 		v.Array = interpretExpression(v.Array, scope)
-		return AST.ExpressionInteger(len(v.Array.(AST.ExpressionArray).Elements))
-	case AST.ExpressionGrouping:
+		return &AST.ExpressionInteger{Value: len(v.Array.(*AST.ExpressionArray).Elements)}
+	case *AST.ExpressionGrouping:
 		return interpretExpression(v.Expr, scope)
-	case AST.ExpressionBinary:
+	case *AST.ExpressionBinary:
 		leftExpression := interpretExpression(v.Left, scope)
 		rightExpression := interpretExpression(v.Right, scope)
 		return interpretBinaryExpression(v.Operator.Kind, leftExpression, rightExpression)
-	case AST.ExpressionArray:
+	case *AST.ExpressionArray:
 		return v
-	case AST.ExpressionArrayAccess:
-		arr := scope.get(v.Name).(AST.ExpressionArray)
-		index := interpretExpression(v.Index, scope).(AST.ExpressionInteger)
-		return arr.Elements[index]
+	case *AST.ExpressionArrayAccess:
+		arr := scope.get(v.Name).(*AST.ExpressionArray)
+		index := interpretExpression(v.Index, scope).(*AST.ExpressionInteger)
+		return arr.Elements[index.Value]
 
 	default:
 		fmt.Printf("Type: %T\n", e)
@@ -159,7 +159,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 	switch v := decl.(type) {
-	case AST.DeclarationVariable:
+	case *AST.DeclarationVariable:
 		if scope.has(v.Name) {
 			panic("Attempting to redeclare: " + v.Name)
 		}
@@ -171,18 +171,18 @@ func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 
 		scope.set(v.Name, v.RHS)
 
-	case AST.DeclarationFunction:
-		global_functions[v.Name] = v
+	case *AST.DeclarationFunction:
+		globalFunctions[v.Name] = v
 
 	}
 }
 
 func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	switch v := s.(type) {
-	case AST.StatementPrint:
+	case *AST.StatementPrint:
 		fmt.Println(interpretExpression(v.Expr, scope))
 
-	case AST.StatementAssignment:
+	case *AST.StatementAssignment:
 		if !scope.has(v.Name) {
 			panic("Attempting to assign to undeclared identifier: " + v.Name)
 		}
@@ -194,19 +194,19 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 
 		scope.set(v.Name, v.RHS)
 
-	case AST.StatementBlock:
+	case *AST.StatementBlock:
 		blockScope := CreateScope(scope)
 		interpretNodes(v.Body, &blockScope)
 
-	case AST.StatementFor:
+	case *AST.StatementFor:
 		forScope := CreateScope(scope)
 		interpretDeclaration(v.Initializer, &forScope)
-		for interpretExpression(v.Condition, &forScope).(AST.ExpressionBoolean) {
+		for interpretExpression(v.Condition, &forScope).(*AST.ExpressionBoolean).Value {
 			interpretStatement(v.Body, &forScope)
 			interpretStatement(v.Increment, &forScope)
 		}
 
-	case AST.StatementReturn:
+	case *AST.StatementReturn:
 		return interpretExpression(v.Expr, scope)
 
 	default:
@@ -235,18 +235,18 @@ func interpretNodes(nodes []AST.Node, scope *Scope) AST.Expression {
 
 func InterpretProgram(program AST.Program) {
 	globalScope := CreateScope(nil)
-	global_functions = make(map[string]AST.DeclarationFunction)
+	globalFunctions = make(map[string]*AST.DeclarationFunction)
 
 	for _, decl := range program.Declarations {
 		interpretDeclaration(decl, &globalScope)
 	}
 
-	if main_decl, ok := global_functions["main"]; ok {
-		main_call := AST.ExpressionFunctionCall{
-			Name: main_decl.Name,
+	if mainDecl, ok := globalFunctions["main"]; ok {
+		mainCall := &AST.ExpressionFunctionCall{
+			Name: mainDecl.Name,
 		}
 
-		interpretExpression(main_call, &globalScope)
+		interpretExpression(mainCall, &globalScope)
 	} else {
 		panic("main function not found")
 	}

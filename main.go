@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"ion-go/Interpreter"
+	"ion-go/JSON"
 	"ion-go/Lexer"
 	"ion-go/Parser"
 	"ion-go/TypeChecker"
@@ -20,5 +21,6 @@ func main() {
 	//fmt.Printf("%+v\n", program)
 
 	TypeChecker.TypeCheckProgram(program)
+	JSON.PrettyPrint(program)
 	Interpreter.InterpretProgram(program)
 }

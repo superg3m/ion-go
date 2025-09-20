@@ -1,16 +1,16 @@
 package AST
 
-func (s StatementAssignment) isNode()      {}
-func (s StatementAssignment) isStatement() {}
+func (*StatementAssignment) isNode()      {}
+func (*StatementAssignment) isStatement() {}
 
-func (s StatementPrint) isNode()      {}
-func (s StatementPrint) isStatement() {}
+func (*StatementPrint) isNode()      {}
+func (*StatementPrint) isStatement() {}
 
-func (s StatementBlock) isNode()      {}
-func (s StatementBlock) isStatement() {}
+func (*StatementBlock) isNode()      {}
+func (*StatementBlock) isStatement() {}
 
-func (s StatementReturn) isNode()      {}
-func (s StatementReturn) isStatement() {}
+func (*StatementReturn) isNode()      {}
+func (*StatementReturn) isStatement() {}
 
-func (s StatementFor) isNode()      {}
-func (s StatementFor) isStatement() {}
+func (*StatementFor) isNode()      {}
+func (*StatementFor) isStatement() {}

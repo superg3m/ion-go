@@ -29,19 +29,19 @@ func (parser *Parser) parsePrimary() AST.Expression {
 	current := parser.peekNthToken(0)
 	if parser.consumeOnMatch(Token.INTEGER_LITERAL) {
 		num, _ := strconv.Atoi(current.Lexeme)
-		return AST.ExpressionInteger(num)
+		return &AST.ExpressionInteger{Value: num}
 	} else if parser.consumeOnMatch(Token.BOOLEAN_LITERAL) {
 		b := current.Lexeme == "true"
-		return AST.ExpressionBoolean(b)
+		return &AST.ExpressionBoolean{Value: b}
 	} else if parser.consumeOnMatch(Token.FLOAT_LITERAL) {
 		num, _ := strconv.ParseFloat(current.Lexeme, 32)
-		return AST.ExpressionFloat(num)
+		return &AST.ExpressionFloat{Value: float32(num)}
 	} else if parser.consumeOnMatch(Token.BUILTIN_LEN) {
 		parser.expect(Token.LEFT_PAREN)
 		arr := parser.parseExpression()
 		parser.expect(Token.RIGHT_PAREN)
 
-		return AST.ExpressionLen{
+		return &AST.ExpressionLen{
 			Array: arr,
 		}
 	} else if parser.consumeOnMatch(Token.IDENTIFIER) {
@@ -50,7 +50,7 @@ func (parser *Parser) parsePrimary() AST.Expression {
 			parser.expect(Token.LEFT_BRACKET)
 			index := parser.parseExpression()
 			parser.expect(Token.RIGHT_BRACKET)
-			return AST.ExpressionArrayAccess{
+			return &AST.ExpressionArrayAccess{
 				Name:  current.Lexeme,
 				Index: index,
 			}
@@ -58,17 +58,17 @@ func (parser *Parser) parsePrimary() AST.Expression {
 
 		if next.Kind == Token.LEFT_PAREN {
 			arguments := parser.parseArguments()
-			return AST.ExpressionFunctionCall{
+			return &AST.ExpressionFunctionCall{
 				Name:      current.Lexeme,
 				Arguments: arguments,
 			}
 		}
 
-		return AST.ExpressionIdentifier{
+		return &AST.ExpressionIdentifier{
 			Name: current.Lexeme,
 		}
 	} else if parser.consumeOnMatch(Token.LEFT_PAREN) {
-		ret := AST.ExpressionGrouping{
+		ret := &AST.ExpressionGrouping{
 			Expr: parser.parseExpression(),
 		}
 		parser.expect(Token.RIGHT_PAREN)
@@ -81,7 +81,7 @@ func (parser *Parser) parsePrimary() AST.Expression {
 
 // <Unary>      ::= ('+'|'-'|'!') <unary> | <Primary>
 func (parser *Parser) parseUnaryExpression() AST.Expression {
-	ret := AST.ExpressionUnary{}
+	ret := &AST.ExpressionUnary{}
 
 	if parser.consumeOnMatch(Token.NOT) || parser.consumeOnMatch(Token.MINUS) || parser.consumeOnMatch(Token.PLUS) {
 		ret.Operator = parser.previousToken()
@@ -100,7 +100,7 @@ func (parser *Parser) parseMultiplicativeExpression() AST.Expression {
 	for parser.consumeOnMatch(Token.STAR) || parser.consumeOnMatch(Token.DIVISION) {
 		op := parser.previousToken()
 		right := parser.parseUnaryExpression()
-		expr = AST.ExpressionBinary{
+		expr = &AST.ExpressionBinary{
 			Operator: op,
 			Left:     expr,
 			Right:    right,
@@ -117,7 +117,7 @@ func (parser *Parser) parseAdditiveExpression() AST.Expression {
 	for parser.consumeOnMatch(Token.PLUS) || parser.consumeOnMatch(Token.MINUS) {
 		op := parser.previousToken()
 		right := parser.parseMultiplicativeExpression()
-		expr = AST.ExpressionBinary{
+		expr = &AST.ExpressionBinary{
 			Operator: op,
 			Left:     expr,
 			Right:    right,
@@ -137,7 +137,7 @@ func (parser *Parser) parseComparisonExpression() AST.Expression {
 		parser.consumeOnMatch(Token.GREATER_THAN) {
 		op := parser.previousToken()
 		right := parser.parseAdditiveExpression()
-		expr = AST.ExpressionBinary{
+		expr = &AST.ExpressionBinary{
 			Operator: op,
 			Left:     expr,
 			Right:    right,
@@ -154,7 +154,7 @@ func (parser *Parser) parseLogicalExpression() AST.Expression {
 	for parser.consumeOnMatch(Token.LOGICAL_AND) || parser.consumeOnMatch(Token.LOGICAL_OR) {
 		op := parser.previousToken()
 		right := parser.parseComparisonExpression()
-		expr = AST.ExpressionBinary{
+		expr = &AST.ExpressionBinary{
 			Operator: op,
 			Left:     expr,
 			Right:    right,
@@ -178,7 +178,7 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 		}
 	}
 
-	return AST.ExpressionArray{
+	return &AST.ExpressionArray{
 		Elements: elements,
 	}
 }

@@ -7,9 +7,17 @@ type Expression interface {
 	isExpression()
 }
 
-type ExpressionInteger int
-type ExpressionFloat float32
-type ExpressionBoolean bool
+type ExpressionInteger struct {
+	Value int
+}
+
+type ExpressionFloat struct {
+	Value float32
+}
+
+type ExpressionBoolean struct {
+	Value bool
+}
 
 type ExpressionIdentifier struct {
 	Name string

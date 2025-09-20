@@ -23,10 +23,10 @@ type StatementReturn struct {
 }
 
 type StatementFor struct {
-	Initializer DeclarationVariable
+	Initializer *DeclarationVariable
 	Condition   Expression
-	Increment   StatementAssignment
-	Body        StatementBlock
+	Increment   *StatementAssignment
+	Body        *StatementBlock
 }
 
 // Block

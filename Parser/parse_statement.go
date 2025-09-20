@@ -11,7 +11,7 @@ func (parser *Parser) parsePrintStatement() AST.Statement {
 	expr := parser.parseExpression()
 	parser.expect(Token.RIGHT_PAREN)
 
-	return AST.StatementPrint{
+	return &AST.StatementPrint{
 		Expr: expr,
 	}
 }
@@ -30,7 +30,7 @@ func (parser *Parser) parseStatementBlock() AST.Statement {
 		}
 	}
 
-	return AST.StatementBlock{
+	return &AST.StatementBlock{
 		Body: body,
 	}
 }

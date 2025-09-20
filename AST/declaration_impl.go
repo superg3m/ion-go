@@ -1,7 +1,7 @@
 package AST
 
-func (s DeclarationVariable) isNode()        {}
-func (s DeclarationVariable) isDeclaration() {}
+func (*DeclarationVariable) isNode()        {}
+func (*DeclarationVariable) isDeclaration() {}
 
-func (s DeclarationFunction) isNode()        {}
-func (s DeclarationFunction) isDeclaration() {}
+func (*DeclarationFunction) isNode()        {}
+func (*DeclarationFunction) isDeclaration() {}
