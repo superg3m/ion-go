@@ -10,10 +10,13 @@ func (parser *Parser) parseParameters() []AST.Parameter {
 
 	parser.expect(Token.LEFT_PAREN)
 	for !parser.consumeOnMatch(Token.RIGHT_PAREN) {
-		arg := parser.expect(Token.IDENTIFIER)
+		param := parser.expect(Token.IDENTIFIER)
+		parser.expect(Token.COLON)
+		dataType := parser.parseDataType()
 
 		args = append(args, AST.Parameter{
-			Name: arg.Lexeme,
+			Name:     param.Lexeme,
+			DeclType: dataType,
 		})
 
 		if parser.peekNthToken(0).Kind != Token.RIGHT_PAREN {

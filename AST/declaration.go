@@ -12,7 +12,8 @@ type DeclarationVariable struct {
 }
 
 type Parameter struct {
-	Name string
+	Name     string
+	DeclType DataType
 }
 
 type DeclarationFunction struct {

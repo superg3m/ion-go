@@ -180,7 +180,12 @@ func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	switch v := s.(type) {
 	case *AST.StatementPrint:
-		fmt.Println(interpretExpression(v.Expr, scope))
+		switch e := interpretExpression(v.Expr, scope).(type) {
+		case *AST.ExpressionInteger:
+			fmt.Println(e.Value)
+		case *AST.ExpressionFloat:
+			fmt.Println(e.Value)
+		}
 
 	case *AST.StatementAssignment:
 		if !scope.has(v.Name) {

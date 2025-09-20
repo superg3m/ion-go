@@ -10,6 +10,7 @@ func (parser *Parser) parsePrintStatement() AST.Statement {
 	parser.expect(Token.LEFT_PAREN)
 	expr := parser.parseExpression()
 	parser.expect(Token.RIGHT_PAREN)
+	parser.expect(Token.SEMI_COLON)
 
 	return &AST.StatementPrint{
 		Expr: expr,
@@ -39,6 +40,7 @@ func (parser *Parser) parseAssignmentStatement() AST.Statement {
 	ident := parser.expect(Token.IDENTIFIER)
 	parser.expect(Token.EQUALS)
 	rhs := parser.parseExpression()
+	parser.expect(Token.SEMI_COLON)
 
 	return &AST.StatementAssignment{
 		Name: ident.Lexeme,

@@ -37,7 +37,7 @@ func (t *TypeEnv) get(key string) *AST.DeclarationVariable {
 		current = current.parent
 	}
 
-	panic("No value for key " + key)
+	panic("Undeclared Identifier: " + key)
 	return &AST.DeclarationVariable{}
 }
 

@@ -10,10 +10,14 @@ func expressionToJson(e AST.Expression) any {
 	switch v := e.(type) {
 	case *AST.ExpressionInteger, *AST.ExpressionFloat, *AST.ExpressionBoolean:
 		return v
+
 	case *AST.ExpressionIdentifier:
 		return map[string]any{
 			"Identifier": v.Name,
 		}
+
+	default:
+		panic(fmt.Sprintf("%T", v))
 	}
 
 	return nil
@@ -23,8 +27,15 @@ func statementToJson(s AST.Statement) map[string]any {
 	switch v := s.(type) {
 	case *AST.StatementReturn:
 		return map[string]any{
-			"ReturnStatement": statementToJson(v),
+			"ReturnStatement": expressionToJson(v.Expr),
 		}
+	case *AST.StatementPrint:
+		return map[string]any{
+			"PrintStatement": expressionToJson(v.Expr),
+		}
+
+	default:
+		panic(fmt.Sprintf("%T", v))
 	}
 	return nil
 }
@@ -39,6 +50,7 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 		return map[string]any{
 			"VariableDeclaration": desc,
 		}
+
 	case *AST.DeclarationFunction:
 		var body []any
 		for _, node := range v.Block.Body {
@@ -52,6 +64,9 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 		return map[string]any{
 			"FunctionDeclaration": desc,
 		}
+
+	default:
+		panic(fmt.Sprintf("%T", v))
 	}
 	return nil
 }
@@ -60,10 +75,15 @@ func nodeToJson(node AST.Node) any {
 	switch v := node.(type) {
 	case AST.Expression:
 		return expressionToJson(v)
+
 	case AST.Statement:
 		return statementToJson(v)
+
 	case AST.Declaration:
 		return declarationToJson(v)
+
+	default:
+		panic(fmt.Sprintf("%T", v))
 	}
 	return nil
 }

@@ -11,18 +11,62 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 	switch v := e.(type) {
 	case *AST.ExpressionInteger:
 		return AST.DataType{Name: "int"}
+
 	case *AST.ExpressionFloat:
 		return AST.DataType{Name: "float"}
+
 	case *AST.ExpressionBoolean:
 		return AST.DataType{Name: "bool"}
+
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Name)
-
 		return decl.DeclType
+
+	case *AST.ExpressionBinary:
+		lt := typeCheckExpression(v.Left, env)
+		rt := typeCheckExpression(v.Right, env)
+
+		if lt.Name == rt.Name {
+			return lt
+		}
+
+		if lt.Name == "float" && rt.Name == "int" {
+			return AST.DataType{
+				Name: "float",
+			}
+		} else if lt.Name == "float" && rt.Name == "int" {
+			return AST.DataType{
+				Name: "float",
+			}
+		}
+
+		if lt.Name != rt.Name {
+			panic(fmt.Sprintf("BinaryExpression: left %s and right %s", lt.Name, rt.Name))
+		}
+
+		return lt
+
 	case *AST.ExpressionFunctionCall:
 		decl, ok := globalFunctions[v.Name]
 		if !ok {
 			panic("undefined function " + v.Name)
+		}
+
+		functionDeclaration := globalFunctions[v.Name]
+		argCount := len(v.Arguments)
+		paramCount := len(functionDeclaration.Parameters)
+
+		if paramCount != argCount {
+			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
+		}
+
+		for i := 0; i < argCount; i++ {
+			param := functionDeclaration.Parameters[i]
+			argType := typeCheckExpression(v.Arguments[i], env)
+
+			if param.DeclType.Name != argType.Name {
+				panic(fmt.Sprintf("argument %d: expected %s, got %s", i, argType.Name, param.DeclType.Name))
+			}
 		}
 
 		return decl.ReturnType
@@ -71,6 +115,14 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 			panic(fmt.Sprintf("Missing return type in %s() body", v.Name))
 		}
 
+		funcEnv := NewTypeEnv(env)
+		for _, param := range v.Parameters {
+			funcEnv.set(param.Name, &AST.DeclarationVariable{
+				Name:     param.Name,
+				DeclType: param.DeclType,
+			})
+		}
+
 		for _, node := range v.Block.Body {
 			if ret, ok := node.(*AST.StatementReturn); ok {
 				if v.ReturnType.Name == "void" && ret.Expr != nil {
@@ -78,7 +130,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				}
 			}
 
-			typeCheckNode(node, env)
+			typeCheckNode(node, funcEnv)
 		}
 	}
 }
