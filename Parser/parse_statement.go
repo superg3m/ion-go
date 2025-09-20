@@ -40,7 +40,7 @@ func (parser *Parser) parseAssignmentStatement() AST.Statement {
 	parser.expect(Token.EQUALS)
 	rhs := parser.parseExpression()
 
-	return AST.StatementAssignment{
+	return &AST.StatementAssignment{
 		Name: ident.Lexeme,
 		RHS:  rhs,
 	}
@@ -56,11 +56,11 @@ func (parser *Parser) parseForStatement() AST.Statement {
 	parser.expect(Token.RIGHT_PAREN)
 	body := parser.parseStatement()
 
-	return AST.StatementFor{
-		Initializer: initializer.(AST.DeclarationVariable),
+	return &AST.StatementFor{
+		Initializer: initializer.(*AST.DeclarationVariable),
 		Condition:   condition,
-		Increment:   increment.(AST.StatementAssignment),
-		Body:        body.(AST.StatementBlock),
+		Increment:   increment.(*AST.StatementAssignment),
+		Body:        body.(*AST.StatementBlock),
 	}
 }
 
@@ -76,7 +76,7 @@ func (parser *Parser) parseStatement() AST.Statement {
 	} else if current.Kind == Token.RETURN {
 		parser.expect(Token.RETURN)
 		expr := parser.parseExpression()
-		return AST.StatementReturn{
+		return &AST.StatementReturn{
 			Expr: expr,
 		}
 	} else if current.Kind == Token.FOR {

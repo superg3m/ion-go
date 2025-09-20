@@ -19,5 +19,5 @@ type DeclarationFunction struct {
 	Name       string
 	Parameters []Parameter
 	ReturnType DataType
-	Block      StatementBlock
+	Block      *StatementBlock
 }
