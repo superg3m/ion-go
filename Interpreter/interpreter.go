@@ -185,6 +185,32 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 			fmt.Println(e.Value)
 		case *AST.ExpressionFloat:
 			fmt.Println(e.Value)
+		case *AST.ExpressionBoolean:
+			fmt.Println(e.Value)
+
+		case *AST.ExpressionArray:
+			fmt.Print("[")
+			for i := 0; i < len(e.Elements); i++ {
+				switch element := interpretExpression(e.Elements[i], scope).(type) {
+				case *AST.ExpressionInteger:
+					fmt.Print(element.Value)
+				case *AST.ExpressionFloat:
+					fmt.Print(element.Value)
+				case *AST.ExpressionBoolean:
+					fmt.Print(element.Value)
+
+				default:
+					panic("unreachable")
+				}
+
+				if i < len(e.Elements)-1 {
+					fmt.Print(" ")
+				}
+			}
+			fmt.Println("]")
+
+		default:
+			panic("unreachable")
 		}
 
 	case *AST.StatementAssignment:

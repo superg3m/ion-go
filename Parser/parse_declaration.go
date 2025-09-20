@@ -36,6 +36,7 @@ func (parser *Parser) parseVariableDeclaration() AST.Declaration {
 		parser.expect(Token.EQUALS)
 	} else {
 		dataType = parser.parseDataType()
+		parser.expect(Token.EQUALS)
 	}
 
 	rhs := parser.parseExpression()

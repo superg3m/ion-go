@@ -1,10 +1,15 @@
 fn do_something(y: int, z: float) -> float {
     var x := 5.4 + y + z;
-    return x
+    x = x * 2;
+
+    return x;
 }
 
 fn main() -> void {
-    var x := 64.2 + do_something(6, 5.0);
+    var x: float = 64 + do_something(6, 5.0);
+
+    print(float.[1.5, x]);
+
     print(x);
 }
 

@@ -8,12 +8,30 @@ import (
 
 func expressionToJson(e AST.Expression) any {
 	switch v := e.(type) {
-	case *AST.ExpressionInteger, *AST.ExpressionFloat, *AST.ExpressionBoolean:
-		return v
+	case *AST.ExpressionInteger:
+		return v.Value
+	case *AST.ExpressionFloat:
+		return v.Value
+	case *AST.ExpressionBoolean:
+		return v.Value
 
 	case *AST.ExpressionIdentifier:
 		return map[string]any{
 			"Identifier": v.Name,
+		}
+
+	case *AST.ExpressionBinary:
+		return map[string]any{
+			"BinaryOp": map[string]any{
+				"Op":    v.Operator.Lexeme,
+				"Left":  expressionToJson(v.Left),
+				"Right": expressionToJson(v.Right),
+			},
+		}
+	case *AST.ExpressionArray:
+		return map[string]any{
+			"Elements": v.Elements,
+			"DeclType": v.DeclType,
 		}
 
 	default:
@@ -25,6 +43,14 @@ func expressionToJson(e AST.Expression) any {
 
 func statementToJson(s AST.Statement) map[string]any {
 	switch v := s.(type) {
+	case *AST.StatementAssignment:
+		return map[string]any{
+			"AssignmentStatement": map[string]any{
+				"name": v.Name,
+				"rhs":  expressionToJson(v.RHS),
+			},
+		}
+
 	case *AST.StatementReturn:
 		return map[string]any{
 			"ReturnStatement": expressionToJson(v.Expr),

@@ -164,10 +164,12 @@ func (parser *Parser) parseLogicalExpression() AST.Expression {
 	return expr
 }
 
-// <array> ::= [(<expression>,)*]
+// <array> ::= <type>.[(<expression>,)*]
 func (parser *Parser) parseArrayExpression() AST.Expression {
 	var elements []AST.Expression
 
+	dataType := parser.parseDataType()
+	parser.expect(Token.DOT)
 	parser.expect(Token.LEFT_BRACKET)
 	for !parser.consumeOnMatch(Token.RIGHT_BRACKET) {
 		expr := parser.parseExpression()
@@ -180,13 +182,17 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 
 	return &AST.ExpressionArray{
 		Elements: elements,
+		DeclType: dataType,
 	}
 }
 
 // <Expression> ::= <additive>
 func (parser *Parser) parseExpression() AST.Expression {
 	current := parser.peekNthToken(0)
-	if current.Kind == Token.LEFT_BRACKET {
+	next := parser.peekNthToken(1)
+	next2 := parser.peekNthToken(2)
+	if current.Kind == Token.IDENTIFIER &&
+		next.Kind == Token.DOT && next2.Kind == Token.LEFT_BRACKET {
 		return parser.parseArrayExpression()
 	} else {
 		return parser.parseLogicalExpression()

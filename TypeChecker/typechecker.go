@@ -34,7 +34,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 			return AST.DataType{
 				Name: "float",
 			}
-		} else if lt.Name == "float" && rt.Name == "int" {
+		} else if lt.Name == "int" && rt.Name == "float" {
 			return AST.DataType{
 				Name: "float",
 			}
@@ -70,9 +70,20 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		}
 
 		return decl.ReturnType
+
+	case *AST.ExpressionArray:
+		for i, element := range v.Elements {
+			elementType := typeCheckExpression(element, env)
+			if elementType.Name != v.DeclType.Name {
+				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, v.DeclType.Name, elementType.Name))
+			}
+		}
+
+	default:
+		panic(fmt.Sprintf("undefined statement: %T", v))
+
 	}
 
-	panic("undefined expression")
 	return AST.DataType{}
 }
 
@@ -85,6 +96,15 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		if decl.DeclType != rhsType {
 			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.Name, decl.DeclType.Name))
 		}
+
+	case *AST.StatementPrint:
+		typeCheckExpression(v.Expr, env)
+
+	case *AST.StatementReturn:
+		typeCheckExpression(v.Expr, env)
+
+	default:
+		panic(fmt.Sprintf("undefined statement: %T", v))
 
 	}
 }

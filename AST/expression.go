@@ -45,6 +45,7 @@ type ExpressionFunctionCall struct {
 
 type ExpressionArray struct {
 	Elements []Expression
+	DeclType DataType
 }
 
 type ExpressionLen struct {

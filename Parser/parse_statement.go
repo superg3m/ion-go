@@ -78,6 +78,8 @@ func (parser *Parser) parseStatement() AST.Statement {
 	} else if current.Kind == Token.RETURN {
 		parser.expect(Token.RETURN)
 		expr := parser.parseExpression()
+		parser.expect(Token.SEMI_COLON)
+
 		return &AST.StatementReturn{
 			Expr: expr,
 		}
