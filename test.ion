@@ -4,7 +4,7 @@ fn do_something(y: int, z: float) -> float {
 }
 
 fn main() -> void {
-    var x := do_something(6, 5.0);
+    var x := 64.2 + do_something(6, 5.0);
     print(x);
 }
 
