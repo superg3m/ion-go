@@ -1,0 +1,5 @@
+fn main() -> void {
+    var x: int = 5
+}
+
+// return type on void
