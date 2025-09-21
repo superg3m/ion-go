@@ -54,10 +54,13 @@ func (parser *Parser) previousToken() Token.Token {
 
 func (parser *Parser) parseDataType() AST.DataType {
 	dataTypeToken := parser.expect(Token.IDENTIFIER)
-
-	return AST.DataType{
-		Name: dataTypeToken.Lexeme,
+	modifier := AST.NO_MODIFIER
+	if parser.consumeOnMatch(Token.LEFT_BRACKET) {
+		parser.consumeOnMatch(Token.RIGHT_BRACKET)
+		modifier = AST.ARRAY
 	}
+
+	return AST.CreateDataType(dataTypeToken.Lexeme, modifier)
 }
 
 func ParseProgram(tokens []Token.Token) AST.Program {

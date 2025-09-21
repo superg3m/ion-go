@@ -55,10 +55,14 @@ func statementToJson(s AST.Statement) map[string]any {
 		return map[string]any{
 			"ReturnStatement": expressionToJson(v.Expr),
 		}
+
 	case *AST.StatementPrint:
 		return map[string]any{
 			"PrintStatement": expressionToJson(v.Expr),
 		}
+
+	case *AST.StatementFor:
+		return map[string]any{}
 
 	default:
 		panic(fmt.Sprintf("%T", v))
@@ -71,7 +75,7 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 	case *AST.DeclarationVariable:
 		desc := map[string]any{
 			"Name":     v.Name,
-			"DeclType": v.DeclType.Name,
+			"DeclType": v.DeclType.String(),
 		}
 		return map[string]any{
 			"VariableDeclaration": desc,
@@ -84,7 +88,7 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 		}
 		desc := map[string]any{
 			"Name":     v.Name,
-			"DeclType": v.ReturnType.Name,
+			"DeclType": v.ReturnType.String(),
 			"Body":     body,
 		}
 		return map[string]any{

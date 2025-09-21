@@ -8,8 +8,13 @@ fn do_something(y: int, z: float) -> float {
 fn main() -> void {
     var x: float = 64 + do_something(6, 5.0);
 
-    print(float.[1.5, x]);
+    var z: float[] = float.[1.5, x];
 
+    for (var i := 0; i < len(z); i = i + 1;) {
+        print(z[i]);
+    }
+
+    print(z);
     print(x);
 }
 

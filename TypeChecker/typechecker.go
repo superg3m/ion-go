@@ -10,13 +10,13 @@ var globalFunctions map[string]*AST.DeclarationFunction
 func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 	switch v := e.(type) {
 	case *AST.ExpressionInteger:
-		return AST.DataType{Name: "int"}
+		return AST.CreateDataType("int", AST.NO_MODIFIER)
 
 	case *AST.ExpressionFloat:
-		return AST.DataType{Name: "float"}
+		return AST.CreateDataType("float", AST.NO_MODIFIER)
 
 	case *AST.ExpressionBoolean:
-		return AST.DataType{Name: "bool"}
+		return AST.CreateDataType("bool", AST.NO_MODIFIER)
 
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Name)
@@ -26,25 +26,17 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		lt := typeCheckExpression(v.Left, env)
 		rt := typeCheckExpression(v.Right, env)
 
-		if lt.Name == rt.Name {
+		if lt.String() == "float" && rt.String() == "int" {
 			return lt
+		} else if lt.String() == "int" && rt.String() == "float" {
+			return rt
 		}
 
-		if lt.Name == "float" && rt.Name == "int" {
-			return AST.DataType{
-				Name: "float",
-			}
-		} else if lt.Name == "int" && rt.Name == "float" {
-			return AST.DataType{
-				Name: "float",
-			}
+		if lt.String() == rt.String() {
+			return lt
+		} else {
+			panic(fmt.Sprintf("Can't perform op: %s on type %s and type %s", v.Operator.Lexeme, lt.String(), rt.String()))
 		}
-
-		if lt.Name != rt.Name {
-			panic(fmt.Sprintf("BinaryExpression: left %s and right %s", lt.Name, rt.Name))
-		}
-
-		return lt
 
 	case *AST.ExpressionFunctionCall:
 		decl, ok := globalFunctions[v.Name]
@@ -64,8 +56,8 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 			param := functionDeclaration.Parameters[i]
 			argType := typeCheckExpression(v.Arguments[i], env)
 
-			if param.DeclType.Name != argType.Name {
-				panic(fmt.Sprintf("argument %d: expected %s, got %s", i, argType.Name, param.DeclType.Name))
+			if param.DeclType.String() != argType.String() {
+				panic(fmt.Sprintf("argument %d: expected %s, got %s", i, argType.String(), param.DeclType.String()))
 			}
 		}
 
@@ -74,10 +66,12 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 	case *AST.ExpressionArray:
 		for i, element := range v.Elements {
 			elementType := typeCheckExpression(element, env)
-			if elementType.Name != v.DeclType.Name {
-				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, v.DeclType.Name, elementType.Name))
+			if elementType.String() != v.DeclType.String() {
+				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, v.DeclType.String(), elementType.String()))
 			}
 		}
+
+		return AST.CreateDataType(v.DeclType.String(), AST.ARRAY)
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
@@ -94,7 +88,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		rhsType := typeCheckExpression(v.RHS, env)
 
 		if decl.DeclType != rhsType {
-			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.Name, decl.DeclType.Name))
+			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.String(), decl.DeclType.String()))
 		}
 
 	case *AST.StatementPrint:
@@ -103,6 +97,8 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 	case *AST.StatementReturn:
 		typeCheckExpression(v.Expr, env)
 
+	case *AST.StatementFor:
+		
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
 
@@ -113,14 +109,14 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 	switch v := decl.(type) {
 	case *AST.DeclarationVariable:
 		rhsType := typeCheckExpression(v.RHS, env)
-		if v.DeclType.Name == "" {
+		if v.DeclType.String() == "" {
 			v.DeclType = rhsType
 		}
 
 		env.set(v.Name, v)
 
 		if v.DeclType != rhsType {
-			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.Name, v.DeclType.Name))
+			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.String(), v.DeclType.String()))
 		}
 
 	case *AST.DeclarationFunction:
@@ -131,7 +127,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 		}
 
 		_, ok := v.Block.Body[len(v.Block.Body)-1].(*AST.StatementReturn)
-		if !ok && v.ReturnType.Name != "void" {
+		if !ok && v.ReturnType.String() != "void" {
 			panic(fmt.Sprintf("Missing return type in %s() body", v.Name))
 		}
 
@@ -145,7 +141,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 		for _, node := range v.Block.Body {
 			if ret, ok := node.(*AST.StatementReturn); ok {
-				if v.ReturnType.Name == "void" && ret.Expr != nil {
+				if v.ReturnType.String() == "void" && ret.Expr != nil {
 					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Name))
 				}
 			}

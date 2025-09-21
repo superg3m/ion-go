@@ -51,7 +51,6 @@ func (parser *Parser) parseForStatement() AST.Statement {
 	parser.expect(Token.FOR)
 	parser.expect(Token.LEFT_PAREN)
 	initializer := parser.parseVariableDeclaration()
-	parser.expect(Token.SEMI_COLON)
 	condition := parser.parseExpression()
 	parser.expect(Token.SEMI_COLON)
 	increment := parser.parseAssignmentStatement()

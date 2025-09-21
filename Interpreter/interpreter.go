@@ -177,53 +177,63 @@ func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 	}
 }
 
+func printExpression(expr AST.Expression, scope *Scope, newLine bool) {
+	switch v := expr.(type) {
+	case *AST.ExpressionInteger:
+		if newLine {
+			fmt.Println(v.Value)
+		} else {
+			fmt.Print(v.Value)
+		}
+
+	case *AST.ExpressionFloat:
+		if newLine {
+			fmt.Println(v.Value)
+		} else {
+			fmt.Print(v.Value)
+		}
+
+	case *AST.ExpressionBoolean:
+		if newLine {
+			fmt.Println(v.Value)
+		} else {
+			fmt.Print(v.Value)
+		}
+
+	case *AST.ExpressionIdentifier:
+		printExpression(scope.get(v.Name), scope, newLine)
+
+	case *AST.ExpressionArray:
+		fmt.Print("[")
+		for i, elem := range v.Elements {
+			if i > 0 {
+				fmt.Print(" ")
+			}
+			printExpression(interpretExpression(elem, scope), scope, false)
+		}
+		fmt.Println("]")
+
+	default:
+		panic(fmt.Sprintf("unprintable type: %T", v))
+	}
+}
+
 func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	switch v := s.(type) {
 	case *AST.StatementPrint:
-		switch e := interpretExpression(v.Expr, scope).(type) {
-		case *AST.ExpressionInteger:
-			fmt.Println(e.Value)
-		case *AST.ExpressionFloat:
-			fmt.Println(e.Value)
-		case *AST.ExpressionBoolean:
-			fmt.Println(e.Value)
-
-		case *AST.ExpressionArray:
-			fmt.Print("[")
-			for i := 0; i < len(e.Elements); i++ {
-				switch element := interpretExpression(e.Elements[i], scope).(type) {
-				case *AST.ExpressionInteger:
-					fmt.Print(element.Value)
-				case *AST.ExpressionFloat:
-					fmt.Print(element.Value)
-				case *AST.ExpressionBoolean:
-					fmt.Print(element.Value)
-
-				default:
-					panic("unreachable")
-				}
-
-				if i < len(e.Elements)-1 {
-					fmt.Print(" ")
-				}
-			}
-			fmt.Println("]")
-
-		default:
-			panic("unreachable")
-		}
+		printExpression(interpretExpression(v.Expr, scope), scope, true)
 
 	case *AST.StatementAssignment:
 		if !scope.has(v.Name) {
 			panic("Attempting to assign to undeclared identifier: " + v.Name)
 		}
 
-		v.RHS = interpretExpression(v.RHS, scope)
-		if v.RHS == nil {
+		temp := interpretExpression(v.RHS, scope)
+		if temp == nil {
 			panic("Attempting to assign void to variable: " + v.Name)
 		}
 
-		scope.set(v.Name, v.RHS)
+		scope.set(v.Name, temp)
 
 	case *AST.StatementBlock:
 		blockScope := CreateScope(scope)
@@ -241,6 +251,7 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		return interpretExpression(v.Expr, scope)
 
 	default:
+		fmt.Printf("Type: %T\n", v)
 		panic("unreachable")
 	}
 
