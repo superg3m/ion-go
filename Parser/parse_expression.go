@@ -47,12 +47,16 @@ func (parser *Parser) parsePrimary() AST.Expression {
 	} else if parser.consumeOnMatch(Token.IDENTIFIER) {
 		next := parser.peekNthToken(0)
 		if next.Kind == Token.LEFT_BRACKET {
-			parser.expect(Token.LEFT_BRACKET)
-			index := parser.parseExpression()
-			parser.expect(Token.RIGHT_BRACKET)
+			var indices []AST.Expression
+			for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {
+				parser.expect(Token.LEFT_BRACKET)
+				indices = append(indices, parser.parseExpression())
+				parser.expect(Token.RIGHT_BRACKET)
+			}
+
 			return &AST.ExpressionArrayAccess{
-				Name:  current.Lexeme,
-				Index: index,
+				Name:    current.Lexeme,
+				Indices: indices,
 			}
 		}
 
@@ -164,12 +168,10 @@ func (parser *Parser) parseLogicalExpression() AST.Expression {
 	return expr
 }
 
-// <array> ::= <type>.[(<expression>,)*]
+// <array> ::= [(<expression>,)*]
 func (parser *Parser) parseArrayExpression() AST.Expression {
 	var elements []AST.Expression
 
-	dataType := parser.parseDataType()
-	parser.expect(Token.DOT)
 	parser.expect(Token.LEFT_BRACKET)
 	for !parser.consumeOnMatch(Token.RIGHT_BRACKET) {
 		expr := parser.parseExpression()
@@ -182,17 +184,15 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 
 	return &AST.ExpressionArray{
 		Elements: elements,
-		DeclType: dataType,
+		DeclType: AST.CreateDataType(""),
 	}
 }
 
 // <Expression> ::= <additive>
 func (parser *Parser) parseExpression() AST.Expression {
 	current := parser.peekNthToken(0)
-	next := parser.peekNthToken(1)
-	next2 := parser.peekNthToken(2)
-	if current.Kind == Token.IDENTIFIER &&
-		next.Kind == Token.DOT && next2.Kind == Token.LEFT_BRACKET {
+
+	if current.Kind == Token.LEFT_BRACKET {
 		return parser.parseArrayExpression()
 	} else {
 		return parser.parseLogicalExpression()

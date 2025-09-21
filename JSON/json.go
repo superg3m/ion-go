@@ -34,6 +34,9 @@ func expressionToJson(e AST.Expression) any {
 			"DeclType": v.DeclType,
 		}
 
+	case *AST.ExpressionArrayAccess:
+		return map[string]any{}
+
 	default:
 		panic(fmt.Sprintf("%T", v))
 	}

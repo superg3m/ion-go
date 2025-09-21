@@ -153,9 +153,19 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		return v
 
 	case *AST.ExpressionArrayAccess:
+		var ret AST.Expression
 		arr := scope.get(v.Name).(*AST.ExpressionArray)
-		index := interpretExpression(v.Index, scope).(*AST.ExpressionInteger)
-		return arr.Elements[index.Value]
+		for i := 0; i < len(v.Indices); i++ {
+			index := interpretExpression(v.Indices[i], scope).(*AST.ExpressionInteger).Value
+
+			if i < len(v.Indices)-1 {
+				arr = interpretExpression(arr.Elements[index], scope).(*AST.ExpressionArray)
+			} else {
+				ret = interpretExpression(arr.Elements[index], scope)
+			}
+		}
+
+		return ret
 
 	default:
 		fmt.Printf("Type: %T\n", e)
@@ -183,31 +193,19 @@ func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 	}
 }
 
-func printExpression(expr AST.Expression, scope *Scope, newLine bool) {
+func printExpression(expr AST.Expression, scope *Scope) {
 	switch v := expr.(type) {
 	case *AST.ExpressionInteger:
-		if newLine {
-			fmt.Println(v.Value)
-		} else {
-			fmt.Print(v.Value)
-		}
+		fmt.Print(v.Value)
 
 	case *AST.ExpressionFloat:
-		if newLine {
-			fmt.Println(v.Value)
-		} else {
-			fmt.Print(v.Value)
-		}
+		fmt.Print(v.Value)
 
 	case *AST.ExpressionBoolean:
-		if newLine {
-			fmt.Println(v.Value)
-		} else {
-			fmt.Print(v.Value)
-		}
+		fmt.Print(v.Value)
 
 	case *AST.ExpressionIdentifier:
-		printExpression(scope.get(v.Name), scope, newLine)
+		printExpression(scope.get(v.Name), scope)
 
 	case *AST.ExpressionArray:
 		fmt.Print("[")
@@ -215,9 +213,9 @@ func printExpression(expr AST.Expression, scope *Scope, newLine bool) {
 			if i > 0 {
 				fmt.Print(" ")
 			}
-			printExpression(interpretExpression(elem, scope), scope, false)
+			printExpression(interpretExpression(elem, scope), scope)
 		}
-		fmt.Println("]")
+		fmt.Print("]")
 
 	default:
 		panic(fmt.Sprintf("unprintable type: %T", v))
@@ -227,7 +225,8 @@ func printExpression(expr AST.Expression, scope *Scope, newLine bool) {
 func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	switch v := s.(type) {
 	case *AST.StatementPrint:
-		printExpression(interpretExpression(v.Expr, scope), scope, true)
+		printExpression(interpretExpression(v.Expr, scope), scope)
+		fmt.Println("")
 
 	case *AST.StatementAssignment:
 		if !scope.has(v.Name) {

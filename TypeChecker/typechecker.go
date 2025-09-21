@@ -10,13 +10,13 @@ var globalFunctions map[string]*AST.DeclarationFunction
 func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 	switch v := e.(type) {
 	case *AST.ExpressionInteger:
-		return AST.CreateDataType("int", AST.NO_MODIFIER)
+		return AST.CreateDataType("int")
 
 	case *AST.ExpressionFloat:
-		return AST.CreateDataType("float", AST.NO_MODIFIER)
+		return AST.CreateDataType("float")
 
 	case *AST.ExpressionBoolean:
-		return AST.CreateDataType("bool", AST.NO_MODIFIER)
+		return AST.CreateDataType("bool")
 
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Name)
@@ -64,14 +64,26 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		return decl.ReturnType
 
 	case *AST.ExpressionArray:
+		firstElementType := AST.CreateDataType("")
 		for i, element := range v.Elements {
 			elementType := typeCheckExpression(element, env)
-			if elementType.String() != v.DeclType.String() {
-				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, v.DeclType.String(), elementType.String()))
+			if firstElementType.String() == "" {
+				firstElementType = elementType
+			}
+
+			if elementType.String() != firstElementType.String() {
+				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, firstElementType.String(), elementType.String()))
 			}
 		}
 
-		return AST.CreateDataType(v.DeclType.String(), AST.ARRAY)
+		v.DeclType = firstElementType
+		return AST.CreateDataType(v.DeclType.String() + AST.ARRAY)
+
+	case *AST.ExpressionArrayAccess:
+		decl := env.get(v.Name)
+		accessType := decl.DeclType.String()[:len(decl.DeclType.String())-2]
+
+		return AST.CreateDataType(accessType)
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
@@ -87,7 +99,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		decl := env.get(v.Name)
 		rhsType := typeCheckExpression(v.RHS, env)
 
-		if decl.DeclType != rhsType {
+		if decl.DeclType.String() != rhsType.String() {
 			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.String(), decl.DeclType.String()))
 		}
 
@@ -98,7 +110,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		typeCheckExpression(v.Expr, env)
 
 	case *AST.StatementFor:
-		
+
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
 
@@ -115,7 +127,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 		env.set(v.Name, v)
 
-		if v.DeclType != rhsType {
+		if v.DeclType.String() != rhsType.String() {
 			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.String(), v.DeclType.String()))
 		}
 

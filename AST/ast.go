@@ -1,9 +1,5 @@
 package AST
 
-import (
-	"fmt"
-)
-
 type Node interface {
 	isNode()
 }
@@ -16,19 +12,17 @@ const (
 )
 
 type DataType struct {
-	name     string
-	modifier TypeModifier
+	name string
 }
 
-func CreateDataType(name string, modifier TypeModifier) DataType {
+func CreateDataType(name string) DataType {
 	return DataType{
-		name:     name,
-		modifier: modifier,
+		name: name,
 	}
 }
 
 func (t DataType) String() string {
-	return fmt.Sprintf("%s%s", t.name, t.modifier)
+	return t.name
 }
 
 type Program struct {

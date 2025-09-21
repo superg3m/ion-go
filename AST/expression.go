@@ -53,8 +53,8 @@ type ExpressionLen struct {
 }
 
 type ExpressionArrayAccess struct {
-	Name  string
-	Index Expression
+	Name    string
+	Indices []Expression
 }
 
 // Identifier
