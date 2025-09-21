@@ -13,7 +13,7 @@ fn do_something(arr: float[], y: int, z: float) -> float {
 
 fn main() -> void {
     var arr2: float[][] = [[2.5, 6.5]];
-    print(arr2[0][0]);
+    print(arr2[0][1]);
 
     var test := 5.5;
     var arr: float[] = [1.5, test];
