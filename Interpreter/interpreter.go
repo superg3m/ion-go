@@ -7,6 +7,7 @@ import (
 )
 
 var globalFunctions map[string]*AST.DeclarationFunction
+var globalScope Scope
 
 func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression) AST.Expression {
 	switch kind {
@@ -126,7 +127,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
 		}
 
-		functionScope := CreateScope(scope)
+		functionScope := CreateScope(&globalScope)
 		for i := 0; i < argCount; i++ {
 			param := functionDeclaration.Parameters[i]
 			arg := v.Arguments[i]
@@ -145,7 +146,12 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		rightExpression := interpretExpression(v.Right, scope)
 		return interpretBinaryExpression(v.Operator.Kind, leftExpression, rightExpression)
 	case *AST.ExpressionArray:
+		for i, element := range v.Elements {
+			v.Elements[i] = interpretExpression(element, scope)
+		}
+
 		return v
+
 	case *AST.ExpressionArrayAccess:
 		arr := scope.get(v.Name).(*AST.ExpressionArray)
 		index := interpretExpression(v.Index, scope).(*AST.ExpressionInteger)
@@ -276,7 +282,7 @@ func interpretNodes(nodes []AST.Node, scope *Scope) AST.Expression {
 }
 
 func InterpretProgram(program AST.Program) {
-	globalScope := CreateScope(nil)
+	globalScope = CreateScope(nil)
 	globalFunctions = make(map[string]*AST.DeclarationFunction)
 
 	for _, decl := range program.Declarations {

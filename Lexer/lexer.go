@@ -88,9 +88,7 @@ func (lexer *Lexer) consumeWord() bool {
 		return unicode.IsDigit(c) || unicode.IsLetter(c) || c == '_'
 	}
 
-	firstCharacterProcessed := false
-	for unicode.IsLetter(rune(lexer.peekNthChar(0))) || (firstCharacterProcessed && isAlphaNumeric(rune(lexer.peekNthChar(0)))) {
-		firstCharacterProcessed = true
+	for isAlphaNumeric(rune(lexer.peekNthChar(0))) {
 		lexer.consumeNextChar()
 	}
 

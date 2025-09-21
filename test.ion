@@ -1,21 +1,21 @@
-fn do_something(y: int, z: float) -> float {
+var cool_factor := 7.0;
+
+fn do_something(arr: float[], y: int, z: float) -> float {
     var x := 5.4 + y + z;
     x = x * 2;
 
-    return x;
+    for (var i := 0; i < len(arr); i = i + 1;) {
+        x = x + arr[i];
+    }
+
+    return x + cool_factor;
 }
 
 fn main() -> void {
-    var x: float = 64 + do_something(6, 5.0);
+    var test := 5.5;
+    var arr: float[] = float.[1.5, test];
+    var x: float = 64 + do_something(arr, 6, 5.0);
 
-    var z: float[] = float.[1.5, x];
-
-    for (var i := 0; i < len(z); i = i + 1;) {
-        print(z[i]);
-    }
-
-    print(z);
     print(x);
+    print(arr);
 }
-
-// return type on void

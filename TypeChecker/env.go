@@ -17,7 +17,7 @@ func NewTypeEnv(parent *TypeEnv) *TypeEnv {
 func (t *TypeEnv) has(key string) bool {
 	current := t
 	for current != nil {
-		_, ok := t.variables[key]
+		_, ok := current.variables[key]
 		if ok {
 			return true
 		}
@@ -30,7 +30,7 @@ func (t *TypeEnv) has(key string) bool {
 func (t *TypeEnv) get(key string) *AST.DeclarationVariable {
 	current := t
 	for current != nil {
-		value, ok := t.variables[key]
+		value, ok := current.variables[key]
 		if ok {
 			return value
 		}
