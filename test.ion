@@ -8,7 +8,7 @@ fn do_something(arr: float[], y: int, z: float) -> float {
         x = x + arr[i];
 
         if (x <= 35) {
-            print("Hello");
+            print("Hello: " + x);
             continue;
         }
 

@@ -15,6 +15,8 @@ func compatibleTypes(lt, rt AST.DataType) (AST.DataType, bool) {
 		return lt, true
 	} else if lt.String() == "int" && rt.String() == "float" {
 		return rt, true
+	} else if lt.String() == "string" || rt.String() == "string" {
+		return AST.CreateDataType("string"), true
 	}
 
 	return AST.CreateDataType(""), false

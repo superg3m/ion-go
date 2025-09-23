@@ -42,6 +42,28 @@ func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression)
 			}
 		}
 
+		if lhs, ok1 := left.(*AST.ExpressionString); ok1 {
+			switch rhs := right.(type) {
+			case *AST.ExpressionInteger:
+				return evaluateString(kind, lhs.Value, fmt.Sprintf("%d", rhs.Value))
+			case *AST.ExpressionFloat:
+				return evaluateString(kind, lhs.Value, fmt.Sprintf("%f", rhs.Value))
+			case *AST.ExpressionString:
+				return evaluateString(kind, lhs.Value, rhs.Value)
+			}
+		}
+
+		if rhs, ok1 := right.(*AST.ExpressionString); ok1 {
+			switch lhs := right.(type) {
+			case *AST.ExpressionInteger:
+				return evaluateString(kind, fmt.Sprintf("%d", lhs.Value), rhs.Value)
+			case *AST.ExpressionFloat:
+				return evaluateString(kind, fmt.Sprintf("%f", lhs.Value), rhs.Value)
+			case *AST.ExpressionString:
+				return evaluateString(kind, lhs.Value, rhs.Value)
+			}
+		}
+
 		panic(fmt.Sprintf("invalid operands for %v: %T and %T", kind, left, right))
 
 	case Token.LOGICAL_AND, Token.LOGICAL_OR:
@@ -110,6 +132,15 @@ func evaluateFloats(kind Token.TokenType, lhs, rhs float32) AST.Expression {
 	case Token.NOT_EQUALS:
 		return &AST.ExpressionBoolean{Value: lhs >= rhs}
 	}
+	panic("unreachable")
+}
+
+func evaluateString(kind Token.TokenType, lhs, rhs string) AST.Expression {
+	switch kind {
+	case Token.PLUS:
+		return &AST.ExpressionString{Value: lhs + rhs}
+	}
+
 	panic("unreachable")
 }
 
