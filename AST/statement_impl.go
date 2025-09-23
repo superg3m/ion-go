@@ -15,6 +15,9 @@ func (*StatementReturn) isStatement() {}
 func (*StatementBreak) isNode()      {}
 func (*StatementBreak) isStatement() {}
 
+func (*StatementContinue) isNode()      {}
+func (*StatementContinue) isStatement() {}
+
 func (*StatementFor) isNode()      {}
 func (*StatementFor) isStatement() {}
 

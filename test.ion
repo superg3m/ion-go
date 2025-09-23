@@ -7,15 +7,17 @@ fn do_something(arr: float[], y: int, z: float) -> float {
     for (var i := 0; i < len(arr); i = i + 1;) {
         x = x + arr[i];
 
-        if (x >= 35) {
-            // break;
-            print("Hello!");
+        if (x <= 35) {
+            print("Hello");
+            continue;
         }
+
+        print("World!");
     }
 
-    x = 0.0;
+    x = 3.0;
     if (x >= 1.0) {
-        return 0.5;
+        return x;
     } else {
         x = 10.0;
     }
@@ -29,8 +31,8 @@ fn main() -> void {
 
     var test := 5.5;
     var arr: float[] = [1.5, test];
-    var x: float = 64 + do_something(arr, 6, 5.0);
+    var kldfjdskljf: float = 64 + do_something(arr, 6, 5.0);
 
-    print(x);
+    print(kldfjdskljf);
     print(arr);
 }

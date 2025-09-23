@@ -106,6 +106,11 @@ func (parser *Parser) parseStatement() AST.Statement {
 		parser.expect(Token.SEMI_COLON)
 
 		return &AST.StatementBreak{}
+	} else if current.Kind == Token.CONTINUE {
+		parser.expect(Token.CONTINUE)
+		parser.expect(Token.SEMI_COLON)
+
+		return &AST.StatementContinue{}
 	} else if current.Kind == Token.FOR {
 		return parser.parseForStatement()
 	} else if current.Kind == Token.IF {

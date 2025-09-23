@@ -44,16 +44,17 @@ const (
 	CHARACTER_LITERAL = "CHARACTER_LITERAL"
 
 	// Keywords
-	FN      = "FN"
-	VAR     = "VAR"
-	IF      = "IF"
-	ELSE    = "ELSE"
-	FOR     = "FOR"
-	WHILE   = "WHILE"
-	NULLPTR = "NULLPTR"
-	RETURN  = "RETURN"
-	BREAK   = "BREAK"
-	PRINT   = "PRINT"
+	FN       = "FN"
+	VAR      = "VAR"
+	IF       = "IF"
+	ELSE     = "ELSE"
+	FOR      = "FOR"
+	WHILE    = "WHILE"
+	NULLPTR  = "NULLPTR"
+	RETURN   = "RETURN"
+	BREAK    = "BREAK"
+	CONTINUE = "CONTINUE"
+	PRINT    = "PRINT"
 
 	// Builtin
 	BUILTIN_LEN = "BUILTIN_LEN"
@@ -71,18 +72,19 @@ func CreateToken(kind TokenType, lexeme string, line int) Token {
 
 func GetKeywordToken(input string) (TokenType, bool) {
 	var m = map[string]TokenType{
-		"fn":      FN,
-		"var":     VAR,
-		"if":      IF,
-		"else":    ELSE,
-		"for":     FOR,
-		"while":   WHILE,
-		"nullptr": NULLPTR,
-		"return":  RETURN,
-		"break":   BREAK,
-		"print":   PRINT,
-		"true":    BOOLEAN_LITERAL,
-		"false":   BOOLEAN_LITERAL,
+		"fn":       FN,
+		"var":      VAR,
+		"if":       IF,
+		"else":     ELSE,
+		"for":      FOR,
+		"while":    WHILE,
+		"nullptr":  NULLPTR,
+		"return":   RETURN,
+		"break":    BREAK,
+		"continue": CONTINUE,
+		"print":    PRINT,
+		"true":     BOOLEAN_LITERAL,
+		"false":    BOOLEAN_LITERAL,
 	}
 
 	token, ok := m[input]

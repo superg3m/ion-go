@@ -137,6 +137,11 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 	case *AST.StatementReturn:
 		typeCheckExpression(v.Expr, env)
 
+	case *AST.StatementBreak, *AST.StatementContinue:
+		if env.CurrentStatus != IN_LOOP {
+			panic("break statement is not in loop")
+		}
+
 	case *AST.StatementFor:
 		typeCheckDeclaration(v.Initializer, env)
 		condition := typeCheckExpression(v.Condition, env)
@@ -146,9 +151,11 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 
 		typeCheckStatement(v.Increment, env)
 
+		env.CurrentStatus = IN_LOOP
 		for _, node := range v.Block.Body {
 			typeCheckNode(node, env)
 		}
+		env.CurrentStatus = NORMAL
 
 	case *AST.StatementIfElse:
 		condition := typeCheckExpression(v.Condition, env)
@@ -165,8 +172,6 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 				typeCheckNode(node, env)
 			}
 		}
-
-	case *AST.StatementBreak:
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))

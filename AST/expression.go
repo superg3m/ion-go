@@ -61,6 +61,19 @@ type ExpressionArrayAccess struct {
 	Indices []Expression
 }
 
+type PseudoBehavior int
+
+const (
+	BREAK PseudoBehavior = iota
+	RETURN
+	CONTINUE
+)
+
+type ExpressionPseudo struct {
+	Expr     Expression
+	Behavior PseudoBehavior
+}
+
 // Identifier
 // IntegerExpr
 // FloatExpr

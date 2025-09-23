@@ -139,7 +139,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 			functionScope.set(param.Name, interpretExpression(arg, scope))
 		}
 
-		return interpretNodes(functionDeclaration.Block.Body, &functionScope)
+		return interpretExpression(interpretNodes(functionDeclaration.Block.Body, &functionScope), &functionScope)
 
 	case *AST.ExpressionLen:
 		v.Array = interpretExpression(v.Array, scope)
@@ -171,6 +171,9 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		}
 
 		return ret
+
+	case *AST.ExpressionPseudo:
+		return interpretExpression(v.Expr, scope)
 
 	default:
 		fmt.Printf("Type: %T\n", e)
@@ -261,16 +264,39 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		interpretDeclaration(v.Initializer, &forScope)
 		for interpretExpression(v.Condition, &forScope).(*AST.ExpressionBoolean).Value {
 			blockRet := interpretStatement(v.Block, &forScope)
-			if blockRet != nil {
-				return blockRet
+			if pseudo, ok := blockRet.(*AST.ExpressionPseudo); ok {
+				if pseudo.Behavior == AST.BREAK {
+					break
+				} else if pseudo.Behavior == AST.RETURN {
+					return pseudo.Expr
+				} else if pseudo.Behavior == AST.CONTINUE {
+				} else {
+					panic("unreachable")
+				}
 			}
+
 			interpretStatement(v.Increment, &forScope)
 		}
 
 		return nil
 
 	case *AST.StatementReturn:
-		return interpretExpression(v.Expr, scope)
+		return &AST.ExpressionPseudo{
+			Expr:     interpretExpression(v.Expr, scope),
+			Behavior: AST.RETURN,
+		}
+
+	case *AST.StatementBreak:
+		return &AST.ExpressionPseudo{
+			Expr:     nil,
+			Behavior: AST.BREAK,
+		}
+
+	case *AST.StatementContinue:
+		return &AST.ExpressionPseudo{
+			Expr:     nil,
+			Behavior: AST.CONTINUE,
+		}
 
 	case *AST.StatementIfElse:
 		cond := interpretExpression(v.Condition, scope).(*AST.ExpressionBoolean)
@@ -295,13 +321,13 @@ func interpretNodes(nodes []AST.Node, scope *Scope) AST.Expression {
 		switch v := node.(type) {
 		case AST.Statement:
 			ret := interpretStatement(v, scope)
-			if ret != nil {
-				return ret
+			if pseudo, ok := ret.(*AST.ExpressionPseudo); ok {
+				return pseudo
 			}
+
 		case AST.Declaration:
 			interpretDeclaration(v, scope)
 		}
-
 	}
 
 	return nil

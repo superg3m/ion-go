@@ -71,6 +71,9 @@ func statementToJson(s AST.Statement) map[string]any {
 	case *AST.StatementIfElse:
 		return map[string]any{}
 
+	case *AST.StatementBreak:
+		return map[string]any{}
+
 	default:
 		panic(fmt.Sprintf("%T", v))
 	}

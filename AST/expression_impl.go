@@ -35,3 +35,6 @@ func (*ExpressionLen) isExpression() {}
 
 func (*ExpressionArrayAccess) isNode()       {}
 func (*ExpressionArrayAccess) isExpression() {}
+
+func (*ExpressionPseudo) isNode()       {}
+func (*ExpressionPseudo) isExpression() {}

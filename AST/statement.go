@@ -23,6 +23,7 @@ type StatementReturn struct {
 }
 
 type StatementBreak struct{}
+type StatementContinue struct{}
 
 type StatementFor struct {
 	Initializer *DeclarationVariable

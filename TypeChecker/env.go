@@ -2,15 +2,24 @@ package TypeChecker
 
 import "ion-go/AST"
 
+type Status int
+
+const (
+	NORMAL Status = iota
+	IN_LOOP
+)
+
 type TypeEnv struct {
-	parent    *TypeEnv
-	variables map[string]*AST.DeclarationVariable
+	parent        *TypeEnv
+	variables     map[string]*AST.DeclarationVariable
+	CurrentStatus Status
 }
 
 func NewTypeEnv(parent *TypeEnv) *TypeEnv {
 	return &TypeEnv{
-		parent:    parent,
-		variables: make(map[string]*AST.DeclarationVariable),
+		parent:        parent,
+		variables:     make(map[string]*AST.DeclarationVariable),
+		CurrentStatus: NORMAL,
 	}
 }
 
