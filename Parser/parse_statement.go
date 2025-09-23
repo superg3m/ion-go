@@ -61,7 +61,7 @@ func (parser *Parser) parseForStatement() AST.Statement {
 		Initializer: initializer.(*AST.DeclarationVariable),
 		Condition:   condition,
 		Increment:   increment.(*AST.StatementAssignment),
-		Body:        body.(*AST.StatementBlock),
+		Block:       body.(*AST.StatementBlock),
 	}
 }
 

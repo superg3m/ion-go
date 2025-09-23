@@ -248,7 +248,7 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		forScope := CreateScope(scope)
 		interpretDeclaration(v.Initializer, &forScope)
 		for interpretExpression(v.Condition, &forScope).(*AST.ExpressionBoolean).Value {
-			interpretStatement(v.Body, &forScope)
+			interpretStatement(v.Block, &forScope)
 			interpretStatement(v.Increment, &forScope)
 		}
 

@@ -3,9 +3,22 @@ package TypeChecker
 import (
 	"fmt"
 	"ion-go/AST"
+	"ion-go/Token"
 )
 
 var globalFunctions map[string]*AST.DeclarationFunction
+
+func compatibleTypes(lt, rt AST.DataType) (AST.DataType, bool) {
+	if lt.String() == rt.String() {
+		return lt, true
+	} else if lt.String() == "float" && rt.String() == "int" {
+		return lt, true
+	} else if lt.String() == "int" && rt.String() == "float" {
+		return rt, true
+	}
+
+	return AST.CreateDataType(""), false
+}
 
 func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 	switch v := e.(type) {
@@ -26,16 +39,21 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		lt := typeCheckExpression(v.Left, env)
 		rt := typeCheckExpression(v.Right, env)
 
-		if lt.String() == "float" && rt.String() == "int" {
-			return lt
-		} else if lt.String() == "int" && rt.String() == "float" {
-			return rt
+		dataType, ok := compatibleTypes(lt, rt)
+		if !ok {
+			panic(fmt.Sprintf("type check failed: lt %v rt %v", lt.String(), rt.String()))
 		}
 
-		if lt.String() == rt.String() {
-			return lt
-		} else {
-			panic(fmt.Sprintf("Can't perform op: %s on type %s and type %s", v.Operator.Lexeme, lt.String(), rt.String()))
+		switch v.Operator.Kind {
+		case Token.EQUALS_EQUALS, Token.LESS_THAN, Token.LESS_THAN_EQUALS, Token.GREATER_THAN_EQUALS, Token.GREATER_THAN:
+			return AST.CreateDataType("bool")
+
+		case Token.PLUS, Token.MINUS, Token.STAR, Token.DIVISION, Token.MODULUS:
+			return dataType
+
+		default:
+			panic(fmt.Sprintf("Undefined binary: %T", v))
+
 		}
 
 	case *AST.ExpressionFunctionCall:
@@ -85,9 +103,15 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 
 		return AST.CreateDataType(accessType)
 
+	case *AST.ExpressionLen:
+		if _, ok := v.Array.(*AST.ExpressionArray); ok {
+			panic("Builtin Len() argument is not iterable")
+		}
+
+		return AST.CreateDataType("int")
+
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
-
 	}
 
 	return AST.DataType{}
@@ -110,6 +134,17 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		typeCheckExpression(v.Expr, env)
 
 	case *AST.StatementFor:
+		typeCheckDeclaration(v.Initializer, env)
+		condition := typeCheckExpression(v.Condition, env)
+		if condition.String() != "bool" {
+			panic("For statement condition doesn't resolve to a bool it resolves to: " + condition.String())
+		}
+
+		typeCheckStatement(v.Increment, env)
+
+		for _, node := range v.Block.Body {
+			typeCheckNode(node, env)
+		}
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))

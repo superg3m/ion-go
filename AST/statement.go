@@ -26,7 +26,7 @@ type StatementFor struct {
 	Initializer *DeclarationVariable
 	Condition   Expression
 	Increment   *StatementAssignment
-	Body        *StatementBlock
+	Block       *StatementBlock
 }
 
 // Block
