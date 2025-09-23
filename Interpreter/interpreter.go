@@ -153,9 +153,9 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 	case *AST.ExpressionInteger, *AST.ExpressionFloat, *AST.ExpressionBoolean, *AST.ExpressionString:
 		return v
 	case *AST.ExpressionIdentifier:
-		return scope.get(v.Name)
+		return scope.get(v.Tok)
 	case *AST.ExpressionFunctionCall:
-		functionDeclaration := globalFunctions[v.Name]
+		functionDeclaration := globalFunctions[v.Tok.Lexeme]
 		argCount := len(v.Arguments)
 		paramCount := len(functionDeclaration.Parameters)
 
@@ -167,7 +167,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		for i := 0; i < argCount; i++ {
 			param := functionDeclaration.Parameters[i]
 			arg := v.Arguments[i]
-			functionScope.set(param.Tok.Lexeme, interpretExpression(arg, scope))
+			functionScope.set(param.Tok, interpretExpression(arg, scope))
 		}
 
 		return interpretExpression(interpretNodes(functionDeclaration.Block.Body, &functionScope), &functionScope)
@@ -190,7 +190,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 	case *AST.ExpressionArrayAccess:
 		var ret AST.Expression
-		arr := scope.get(v.Name).(*AST.ExpressionArray)
+		arr := scope.get(v.Tok).(*AST.ExpressionArray)
 		for i := 0; i < len(v.Indices); i++ {
 			index := interpretExpression(v.Indices[i], scope).(*AST.ExpressionInteger).Value
 
@@ -215,7 +215,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 	switch v := decl.(type) {
 	case *AST.DeclarationVariable:
-		if scope.has(v.Tok.Lexeme) {
+		if scope.has(v.Tok) {
 			panic("Attempting to redeclare: " + v.Tok.Lexeme)
 		}
 
@@ -224,7 +224,7 @@ func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 			panic("Attempting to assign void to variable: " + v.Tok.Lexeme)
 		}
 
-		scope.set(v.Tok.Lexeme, v.RHS)
+		scope.set(v.Tok, v.RHS)
 
 	case *AST.DeclarationFunction:
 		globalFunctions[v.Tok.Lexeme] = v
@@ -247,7 +247,7 @@ func printExpression(expr AST.Expression, scope *Scope) {
 		fmt.Print(v.Value)
 
 	case *AST.ExpressionIdentifier:
-		printExpression(scope.get(v.Name), scope)
+		printExpression(scope.get(v.Tok), scope)
 
 	case *AST.ExpressionArray:
 		fmt.Print("[")
@@ -273,16 +273,16 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		return nil
 
 	case *AST.StatementAssignment:
-		if !scope.has(v.Name) {
-			panic("Attempting to assign to undeclared identifier: " + v.Name)
+		if !scope.has(v.Tok) {
+			panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", v.Tok.Line, v.Tok.Lexeme))
 		}
 
 		temp := interpretExpression(v.RHS, scope)
 		if temp == nil {
-			panic("Attempting to assign void to variable: " + v.Name)
+			panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", v.Tok.Line, v.Tok.Lexeme))
 		}
 
-		scope.set(v.Name, temp)
+		scope.set(v.Tok, temp)
 
 		return nil
 
@@ -374,7 +374,7 @@ func InterpretProgram(program AST.Program) {
 
 	if mainDecl, ok := globalFunctions["main"]; ok {
 		mainCall := &AST.ExpressionFunctionCall{
-			Name: mainDecl.Tok.Lexeme,
+			Tok: mainDecl.Tok,
 		}
 
 		interpretExpression(mainCall, &globalScope)

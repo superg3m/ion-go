@@ -37,7 +37,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		return AST.CreateDataType("string")
 
 	case *AST.ExpressionIdentifier:
-		decl := env.get(v.Name)
+		decl := env.get(v.Tok)
 		return decl.DeclType
 
 	case *AST.ExpressionBinary:
@@ -63,12 +63,12 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		}
 
 	case *AST.ExpressionFunctionCall:
-		decl, ok := globalFunctions[v.Name]
+		decl, ok := globalFunctions[v.Tok.Lexeme]
 		if !ok {
-			panic("undefined function " + v.Name)
+			panic("undefined function " + v.Tok.Lexeme)
 		}
 
-		functionDeclaration := globalFunctions[v.Name]
+		functionDeclaration := globalFunctions[v.Tok.Lexeme]
 		argCount := len(v.Arguments)
 		paramCount := len(functionDeclaration.Parameters)
 
@@ -104,13 +104,15 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		return AST.CreateDataType(AST.ARRAY + v.DeclType.String())
 
 	case *AST.ExpressionArrayAccess:
-		decl := env.get(v.Name)
-		currType := decl.DeclType.String()
-		if currType[0] != byte('[') {
-			panic(fmt.Sprintf("undefined array access: %s is of type %s missing a [] type modifier", v.Name, currType))
-		}
+		decl := env.get(v.Tok)
+		accessType := decl.DeclType.String()
+		for i := 0; i < len(v.Indices); i++ {
+			if accessType[0] != byte('[') {
+				panic(fmt.Sprintf("Line: %d | undefined array access: %s", v.Tok.Line, v.Tok.Lexeme))
+			}
 
-		accessType := decl.DeclType.String()[2:len(decl.DeclType.String())]
+			accessType = accessType[2:]
+		}
 
 		return AST.CreateDataType(accessType)
 
@@ -131,7 +133,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 	switch v := s.(type) {
 	case *AST.StatementAssignment:
-		decl := env.get(v.Name)
+		decl := env.get(v.Tok)
 		rhsType := typeCheckExpression(v.RHS, env)
 
 		if decl.DeclType.String() != rhsType.String() {
@@ -194,7 +196,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 			v.DeclType = rhsType
 		}
 
-		env.set(v.Tok.Lexeme, v)
+		env.set(v.Tok, v)
 
 		if v.DeclType.String() != rhsType.String() {
 			panic(fmt.Sprintf("Line: %d |  Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), v.DeclType.String()))
@@ -214,7 +216,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 		funcEnv := NewTypeEnv(env)
 		for _, param := range v.Parameters {
-			funcEnv.set(param.Tok.Lexeme, &AST.DeclarationVariable{
+			funcEnv.set(param.Tok, &AST.DeclarationVariable{
 				Tok:      param.Tok,
 				DeclType: param.DeclType,
 			})

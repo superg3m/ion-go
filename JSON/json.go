@@ -17,7 +17,7 @@ func expressionToJson(e AST.Expression) any {
 
 	case *AST.ExpressionIdentifier:
 		return map[string]any{
-			"Identifier": v.Name,
+			"Identifier": v.Tok.Lexeme,
 		}
 
 	case *AST.ExpressionBinary:
@@ -49,7 +49,7 @@ func statementToJson(s AST.Statement) map[string]any {
 	case *AST.StatementAssignment:
 		return map[string]any{
 			"AssignmentStatement": map[string]any{
-				"name": v.Name,
+				"name": v.Tok,
 				"rhs":  expressionToJson(v.RHS),
 			},
 		}

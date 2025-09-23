@@ -24,7 +24,7 @@ type ExpressionBoolean struct {
 }
 
 type ExpressionIdentifier struct {
-	Name string
+	Tok Token.Token
 }
 
 type ExpressionGrouping struct {
@@ -43,7 +43,7 @@ type ExpressionBinary struct {
 }
 
 type ExpressionFunctionCall struct {
-	Name      string
+	Tok       Token.Token
 	Arguments []Expression
 }
 
@@ -57,7 +57,7 @@ type ExpressionLen struct {
 }
 
 type ExpressionArrayAccess struct {
-	Name    string
+	Tok     Token.Token
 	Indices []Expression
 }
 

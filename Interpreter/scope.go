@@ -1,6 +1,10 @@
 package Interpreter
 
-import "ion-go/AST"
+import (
+	"fmt"
+	"ion-go/AST"
+	"ion-go/Token"
+)
 
 type Scope struct {
 	parent    *Scope
@@ -14,10 +18,10 @@ func CreateScope(parent *Scope) Scope {
 	}
 }
 
-func (s *Scope) has(key string) bool {
+func (s *Scope) has(key Token.Token) bool {
 	current := s
 	for current != nil {
-		_, ok := current.variables[key]
+		_, ok := current.variables[key.Lexeme]
 		if ok {
 			return true
 		}
@@ -27,30 +31,30 @@ func (s *Scope) has(key string) bool {
 	return false
 }
 
-func (s *Scope) get(key string) AST.Expression {
+func (s *Scope) get(key Token.Token) AST.Expression {
 	current := s
 	for current != nil {
-		value, ok := current.variables[key]
+		value, ok := current.variables[key.Lexeme]
 		if ok {
 			return value
 		}
 		current = current.parent
 	}
 
-	panic("Undeclared Identifier: " + key)
+	panic(fmt.Sprintf("Line: %d | Undeclared Identifier: %s", key.Line, key.Lexeme))
 	return nil
 }
 
-func (s *Scope) set(key string, value AST.Expression) {
+func (s *Scope) set(key Token.Token, value AST.Expression) {
 	current := s
 	for current != nil {
-		_, ok := current.variables[key]
+		_, ok := current.variables[key.Lexeme]
 		if ok {
-			current.variables[key] = value
+			current.variables[key.Lexeme] = value
 			return
 		}
 		current = current.parent
 	}
 
-	s.variables[key] = value
+	s.variables[key.Lexeme] = value
 }

@@ -43,8 +43,8 @@ func (parser *Parser) parseAssignmentStatement() AST.Statement {
 	parser.expect(Token.SEMI_COLON)
 
 	return &AST.StatementAssignment{
-		Name: ident.Lexeme,
-		RHS:  rhs,
+		Tok: ident,
+		RHS: rhs,
 	}
 }
 func (parser *Parser) parseForStatement() AST.Statement {

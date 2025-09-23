@@ -1,6 +1,10 @@
 package TypeChecker
 
-import "ion-go/AST"
+import (
+	"fmt"
+	"ion-go/AST"
+	"ion-go/Token"
+)
 
 type Status int
 
@@ -23,10 +27,10 @@ func NewTypeEnv(parent *TypeEnv) *TypeEnv {
 	}
 }
 
-func (t *TypeEnv) has(key string) bool {
+func (t *TypeEnv) has(key Token.Token) bool {
 	current := t
 	for current != nil {
-		_, ok := current.variables[key]
+		_, ok := current.variables[key.Lexeme]
 		if ok {
 			return true
 		}
@@ -36,24 +40,24 @@ func (t *TypeEnv) has(key string) bool {
 	return false
 }
 
-func (t *TypeEnv) get(key string) *AST.DeclarationVariable {
+func (t *TypeEnv) get(key Token.Token) *AST.DeclarationVariable {
 	current := t
 	for current != nil {
-		value, ok := current.variables[key]
+		value, ok := current.variables[key.Lexeme]
 		if ok {
 			return value
 		}
 		current = current.parent
 	}
 
-	panic("Undeclared Identifier: " + key)
+	panic(fmt.Sprintf("Line %d | Undeclared Identifier: %s", key.Line, key.Lexeme))
 	return &AST.DeclarationVariable{}
 }
 
-func (t *TypeEnv) set(key string, value *AST.DeclarationVariable) {
+func (t *TypeEnv) set(key Token.Token, value *AST.DeclarationVariable) {
 	if t.has(key) {
-		panic("Variable " + key + " already defined")
+		panic(fmt.Sprintf("Line: %d | Variable %s already defined", key.Line, key.Lexeme))
 	}
 
-	t.variables[key] = value
+	t.variables[key.Lexeme] = value
 }

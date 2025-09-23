@@ -57,7 +57,7 @@ func (parser *Parser) parsePrimary() AST.Expression {
 			}
 
 			return &AST.ExpressionArrayAccess{
-				Name:    current.Lexeme,
+				Tok:     current,
 				Indices: indices,
 			}
 		}
@@ -65,13 +65,13 @@ func (parser *Parser) parsePrimary() AST.Expression {
 		if next.Kind == Token.LEFT_PAREN {
 			arguments := parser.parseArguments()
 			return &AST.ExpressionFunctionCall{
-				Name:      current.Lexeme,
+				Tok:       current,
 				Arguments: arguments,
 			}
 		}
 
 		return &AST.ExpressionIdentifier{
-			Name: current.Lexeme,
+			Tok: current,
 		}
 	} else if parser.consumeOnMatch(Token.LEFT_PAREN) {
 		ret := &AST.ExpressionGrouping{

@@ -1,13 +1,15 @@
 package AST
 
+import "ion-go/Token"
+
 type Statement interface {
 	Node
 	isStatement()
 }
 
 type StatementAssignment struct {
-	Name string
-	RHS  Expression
+	Tok Token.Token
+	RHS Expression
 }
 
 type StatementPrint struct {
