@@ -131,11 +131,13 @@ func (parser *Parser) parseAdditiveExpression() AST.Expression {
 	return expr
 }
 
-// <comparison> ::= <additive> (('<'|'<='|'>='|'>'} <additive>)*
+// <comparison> ::= <additive> (('=='|'!='|<'|'<='|'>='|'>'} <additive>)*
 func (parser *Parser) parseComparisonExpression() AST.Expression {
 	expr := parser.parseAdditiveExpression()
 
-	for parser.consumeOnMatch(Token.LESS_THAN) ||
+	for parser.consumeOnMatch(Token.EQUALS_EQUALS) ||
+		parser.consumeOnMatch(Token.NOT_EQUALS) ||
+		parser.consumeOnMatch(Token.LESS_THAN) ||
 		parser.consumeOnMatch(Token.LESS_THAN_EQUALS) ||
 		parser.consumeOnMatch(Token.GREATER_THAN_EQUALS) ||
 		parser.consumeOnMatch(Token.GREATER_THAN) {

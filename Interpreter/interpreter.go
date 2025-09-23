@@ -12,7 +12,8 @@ var globalScope Scope
 func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression) AST.Expression {
 	switch kind {
 	case Token.PLUS, Token.MINUS, Token.STAR, Token.DIVISION,
-		Token.LESS_THAN, Token.LESS_THAN_EQUALS, Token.GREATER_THAN, Token.GREATER_THAN_EQUALS:
+		Token.LESS_THAN, Token.LESS_THAN_EQUALS, Token.GREATER_THAN, Token.GREATER_THAN_EQUALS,
+		Token.EQUALS_EQUALS, Token.NOT_EQUALS:
 		// Try int + int
 		if lhs, ok1 := left.(*AST.ExpressionInteger); ok1 {
 			if rhs, ok2 := right.(*AST.ExpressionInteger); ok2 {
@@ -103,6 +104,10 @@ func evaluateFloats(kind Token.TokenType, lhs, rhs float32) AST.Expression {
 	case Token.GREATER_THAN:
 		return &AST.ExpressionBoolean{Value: lhs > rhs}
 	case Token.GREATER_THAN_EQUALS:
+		return &AST.ExpressionBoolean{Value: lhs >= rhs}
+	case Token.EQUALS_EQUALS:
+		return &AST.ExpressionBoolean{Value: lhs >= rhs}
+	case Token.NOT_EQUALS:
 		return &AST.ExpressionBoolean{Value: lhs >= rhs}
 	}
 	panic("unreachable")

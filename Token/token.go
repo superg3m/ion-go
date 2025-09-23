@@ -29,6 +29,7 @@ const (
 
 	// SYNTAX MULTIPLE CHARACTERS
 	EQUALS_EQUALS       = "EQUALS_EQUALS"       // "=="
+	NOT_EQUALS          = "NOT_EQUALS"          // "!="
 	GREATER_THAN_EQUALS = "GREATER_THAN_EQUALS" // ">="
 	LESS_THAN_EQUALS    = "LESS_THAN_EQUALS"    // "<="
 	LOGICAL_AND         = "LOGICAL_AND"         // "&&"
@@ -117,6 +118,7 @@ func GetSyntaxToken(input string) (TokenType, bool) {
 		"{":  LEFT_CURLY,
 		"}":  RIGHT_CURLY,
 		"==": EQUALS_EQUALS,
+		"!=": NOT_EQUALS,
 		">=": GREATER_THAN_EQUALS,
 		"<=": LESS_THAN_EQUALS,
 		"&&": LOGICAL_AND,

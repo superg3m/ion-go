@@ -45,14 +45,15 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		}
 
 		switch v.Operator.Kind {
-		case Token.EQUALS_EQUALS, Token.LESS_THAN, Token.LESS_THAN_EQUALS, Token.GREATER_THAN_EQUALS, Token.GREATER_THAN:
+		case Token.EQUALS_EQUALS, Token.NOT_EQUALS, Token.LESS_THAN,
+			Token.LESS_THAN_EQUALS, Token.GREATER_THAN_EQUALS, Token.GREATER_THAN:
 			return AST.CreateDataType("bool")
 
 		case Token.PLUS, Token.MINUS, Token.STAR, Token.DIVISION, Token.MODULUS:
 			return dataType
 
 		default:
-			panic(fmt.Sprintf("Undefined binary: %T", v))
+			panic(fmt.Sprintf("Undefined binary: %s", v.Operator.Kind))
 
 		}
 
@@ -191,6 +192,13 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				if v.ReturnType.String() == "void" && ret.Expr != nil {
 					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Name))
 				}
+
+				retType := typeCheckExpression(ret.Expr, funcEnv)
+				if v.ReturnType.String() != retType.String() {
+					panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Name, v.ReturnType.String(), retType.String()))
+				}
+
+				continue
 			}
 
 			typeCheckNode(node, funcEnv)
