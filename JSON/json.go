@@ -64,7 +64,11 @@ func statementToJson(s AST.Statement) map[string]any {
 			"PrintStatement": expressionToJson(v.Expr),
 		}
 
+		// TODO(Jovanni): Actually implement this
 	case *AST.StatementFor:
+		return map[string]any{}
+
+	case *AST.StatementIfElse:
 		return map[string]any{}
 
 	default:

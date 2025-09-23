@@ -8,6 +8,13 @@ fn do_something(arr: float[], y: int, z: float) -> float {
         x = x + arr[i];
     }
 
+    x = 0.0;
+    if (x >= 1.0) {
+        return 0.5;
+    } else {
+        x = 10.0;
+    }
+
     return x + cool_factor;
 }
 

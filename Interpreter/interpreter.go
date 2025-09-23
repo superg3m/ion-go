@@ -233,6 +233,8 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		printExpression(interpretExpression(v.Expr, scope), scope)
 		fmt.Println("")
 
+		return nil
+
 	case *AST.StatementAssignment:
 		if !scope.has(v.Name) {
 			panic("Attempting to assign to undeclared identifier: " + v.Name)
@@ -245,20 +247,37 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 
 		scope.set(v.Name, temp)
 
+		return nil
+
 	case *AST.StatementBlock:
 		blockScope := CreateScope(scope)
-		interpretNodes(v.Body, &blockScope)
+		return interpretNodes(v.Body, &blockScope)
 
 	case *AST.StatementFor:
 		forScope := CreateScope(scope)
 		interpretDeclaration(v.Initializer, &forScope)
 		for interpretExpression(v.Condition, &forScope).(*AST.ExpressionBoolean).Value {
-			interpretStatement(v.Block, &forScope)
+			blockRet := interpretStatement(v.Block, &forScope)
+			if blockRet != nil {
+				return blockRet
+			}
 			interpretStatement(v.Increment, &forScope)
 		}
 
+		return nil
+
 	case *AST.StatementReturn:
 		return interpretExpression(v.Expr, scope)
+
+	case *AST.StatementIfElse:
+		cond := interpretExpression(v.Condition, scope).(*AST.ExpressionBoolean)
+		if cond.Value {
+			return interpretStatement(v.IfBlock, scope)
+		} else {
+			if v.ElseBlock != nil {
+				return interpretStatement(v.ElseBlock, scope)
+			}
+		}
 
 	default:
 		fmt.Printf("Type: %T\n", v)

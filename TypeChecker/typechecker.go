@@ -147,6 +147,22 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 			typeCheckNode(node, env)
 		}
 
+	case *AST.StatementIfElse:
+		condition := typeCheckExpression(v.Condition, env)
+		if condition.String() != "bool" {
+			panic("For statement condition doesn't resolve to a bool it resolves to: " + condition.String())
+		}
+
+		for _, node := range v.IfBlock.Body {
+			typeCheckNode(node, env)
+		}
+
+		if v.ElseBlock != nil {
+			for _, node := range v.ElseBlock.Body {
+				typeCheckNode(node, env)
+			}
+		}
+
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
 

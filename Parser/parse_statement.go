@@ -103,6 +103,8 @@ func (parser *Parser) parseStatement() AST.Statement {
 		}
 	} else if current.Kind == Token.FOR {
 		return parser.parseForStatement()
+	} else if current.Kind == Token.IF {
+		return parser.parseIfElseStatement()
 	}
 
 	panic("INVALID STATEMENT!")
