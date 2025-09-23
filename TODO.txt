@@ -16,3 +16,6 @@
     - [] Literals are comp-time
 
 - How do we do type casting
+
+- Add some type of ParseContext
+    - Are you currently parsing an array literal for example?

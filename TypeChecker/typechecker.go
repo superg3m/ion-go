@@ -105,6 +105,11 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 
 	case *AST.ExpressionArrayAccess:
 		decl := env.get(v.Name)
+		currType := decl.DeclType.String()
+		if currType[0] != byte('[') {
+			panic(fmt.Sprintf("undefined array access: %s is of type %s missing a [] type modifier", v.Name, currType))
+		}
+
 		accessType := decl.DeclType.String()[2:len(decl.DeclType.String())]
 
 		return AST.CreateDataType(accessType)
