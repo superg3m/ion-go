@@ -6,6 +6,11 @@ fn do_something(arr: float[], y: int, z: float) -> float {
 
     for (var i := 0; i < len(arr); i = i + 1;) {
         x = x + arr[i];
+
+        if (x >= 35) {
+            // break;
+            print("Hello!");
+        }
     }
 
     x = 0.0;

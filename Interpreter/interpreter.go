@@ -119,7 +119,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 	}
 
 	switch v := e.(type) {
-	case *AST.ExpressionInteger, *AST.ExpressionFloat, *AST.ExpressionBoolean:
+	case *AST.ExpressionInteger, *AST.ExpressionFloat, *AST.ExpressionBoolean, *AST.ExpressionString:
 		return v
 	case *AST.ExpressionIdentifier:
 		return scope.get(v.Name)
@@ -207,6 +207,9 @@ func printExpression(expr AST.Expression, scope *Scope) {
 		fmt.Print(v.Value)
 
 	case *AST.ExpressionBoolean:
+		fmt.Print(v.Value)
+
+	case *AST.ExpressionString:
 		fmt.Print(v.Value)
 
 	case *AST.ExpressionIdentifier:

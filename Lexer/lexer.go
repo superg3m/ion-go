@@ -213,18 +213,17 @@ func (lexer *Lexer) addToken(kind Token.TokenType) {
 	lexer.tokens = append(lexer.tokens, Token.CreateToken(kind, lexer.getScratchBuffer(), lexer.line))
 }
 
-/*
 func (lexer *Lexer) tryConsumeStringLiteral() {
 	for !lexer.consumeOnMatch('"') {
 		if lexer.isEOF() {
 			lexer.reportError("String literal doesn't have a closing double quote!")
 		}
+
+		lexer.consumeNextChar()
 	}
 
-	lexer.consumeNextChar()
 	lexer.addToken(Token.STRING_LITERAL)
 }
-
 
 func (lexer *Lexer) tryConsumeCharacterLiteral() {
 	if lexer.consumeOnMatch('\'') {
@@ -241,7 +240,6 @@ func (lexer *Lexer) tryConsumeCharacterLiteral() {
 
 	lexer.addToken(Token.CHARACTER_LITERAL)
 }
-*/
 
 func (lexer *Lexer) tryConsumeDigitLiteral() {
 	var kind Token.TokenType = Token.INTEGER_LITERAL
@@ -262,14 +260,10 @@ func (lexer *Lexer) consumeLiteral() bool {
 		lexer.tryConsumeDigitLiteral()
 		return true
 	} else if lexer.c == '"' {
-		// lexer.tryConsumeStringLiteral()
-		panic("NOT IMPLEMENTED STRING LITERALS")
-
+		lexer.tryConsumeStringLiteral()
 		return true
 	} else if lexer.c == '\'' {
-		panic("NOT IMPLEMENTED CHARACTER LITERALS")
-
-		// lexer.tryConsumeCharacterLiteral()
+		lexer.tryConsumeCharacterLiteral()
 		return true
 	} else {
 		return false

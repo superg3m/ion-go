@@ -9,6 +9,9 @@ func (*ExpressionFloat) isExpression() {}
 func (*ExpressionBoolean) isNode()       {}
 func (*ExpressionBoolean) isExpression() {}
 
+func (e ExpressionString) isNode()       {}
+func (e ExpressionString) isExpression() {}
+
 func (*ExpressionIdentifier) isNode()       {}
 func (*ExpressionIdentifier) isExpression() {}
 

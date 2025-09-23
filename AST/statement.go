@@ -22,6 +22,8 @@ type StatementReturn struct {
 	Expr Expression
 }
 
+type StatementBreak struct{}
+
 type StatementFor struct {
 	Initializer *DeclarationVariable
 	Condition   Expression

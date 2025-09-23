@@ -101,6 +101,11 @@ func (parser *Parser) parseStatement() AST.Statement {
 		return &AST.StatementReturn{
 			Expr: expr,
 		}
+	} else if current.Kind == Token.BREAK {
+		parser.expect(Token.BREAK)
+		parser.expect(Token.SEMI_COLON)
+
+		return &AST.StatementBreak{}
 	} else if current.Kind == Token.FOR {
 		return parser.parseForStatement()
 	} else if current.Kind == Token.IF {

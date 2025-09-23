@@ -24,7 +24,7 @@ func (parser *Parser) parseArguments() []AST.Expression {
 	return ret
 }
 
-// <Primary>    ::= <integer> | <float> | <boolean> | '(' <Expression> ')'
+// <Primary>    ::= <integer> | <float> | <boolean> | <string> | '(' <Expression> ')'
 func (parser *Parser) parsePrimary() AST.Expression {
 	current := parser.peekNthToken(0)
 	if parser.consumeOnMatch(Token.INTEGER_LITERAL) {
@@ -36,6 +36,8 @@ func (parser *Parser) parsePrimary() AST.Expression {
 	} else if parser.consumeOnMatch(Token.FLOAT_LITERAL) {
 		num, _ := strconv.ParseFloat(current.Lexeme, 32)
 		return &AST.ExpressionFloat{Value: float32(num)}
+	} else if parser.consumeOnMatch(Token.STRING_LITERAL) {
+		return &AST.ExpressionString{Value: current.Lexeme[1 : len(current.Lexeme)-1]}
 	} else if parser.consumeOnMatch(Token.BUILTIN_LEN) {
 		parser.expect(Token.LEFT_PAREN)
 		arr := parser.parseExpression()

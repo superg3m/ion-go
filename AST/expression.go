@@ -15,6 +15,10 @@ type ExpressionFloat struct {
 	Value float32
 }
 
+type ExpressionString struct {
+	Value string
+}
+
 type ExpressionBoolean struct {
 	Value bool
 }

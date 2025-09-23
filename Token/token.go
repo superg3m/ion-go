@@ -36,10 +36,12 @@ const (
 	LOGICAL_OR          = "LOGICAL_OR"          // "||"
 	RIGHT_ARROW         = "RIGHT_ARROW"         // "->"
 
-	IDENTIFIER      = "IDENTIFIER"
-	INTEGER_LITERAL = "INTEGER_LITERAL"
-	FLOAT_LITERAL   = "FLOAT_LITERAL"
-	BOOLEAN_LITERAL = "BOOLEAN_LITERAL"
+	IDENTIFIER        = "IDENTIFIER"
+	INTEGER_LITERAL   = "INTEGER_LITERAL"
+	FLOAT_LITERAL     = "FLOAT_LITERAL"
+	BOOLEAN_LITERAL   = "BOOLEAN_LITERAL"
+	STRING_LITERAL    = "STRING_LITERAL"
+	CHARACTER_LITERAL = "CHARACTER_LITERAL"
 
 	// Keywords
 	FN      = "FN"
@@ -50,6 +52,7 @@ const (
 	WHILE   = "WHILE"
 	NULLPTR = "NULLPTR"
 	RETURN  = "RETURN"
+	BREAK   = "BREAK"
 	PRINT   = "PRINT"
 
 	// Builtin
@@ -76,6 +79,7 @@ func GetKeywordToken(input string) (TokenType, bool) {
 		"while":   WHILE,
 		"nullptr": NULLPTR,
 		"return":  RETURN,
+		"break":   BREAK,
 		"print":   PRINT,
 		"true":    BOOLEAN_LITERAL,
 		"false":   BOOLEAN_LITERAL,

@@ -31,6 +31,9 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 	case *AST.ExpressionBoolean:
 		return AST.CreateDataType("bool")
 
+	case *AST.ExpressionString:
+		return AST.CreateDataType("string")
+
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Name)
 		return decl.DeclType
@@ -162,6 +165,8 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 				typeCheckNode(node, env)
 			}
 		}
+
+	case *AST.StatementBreak:
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
