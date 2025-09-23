@@ -1,0 +1,18 @@
+- Assignment
+    - [] LHS (needs to be expression)
+    - [] Member Assignment
+
+- Structs
+    - [] Member
+    - [] Union
+
+- Pointer
+
+- Errors
+
+- Finish the AST pretty print
+
+- Are you comp-time known
+    - [] Literals are comp-time
+
+- How do we do type casting
