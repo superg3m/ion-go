@@ -15,7 +15,7 @@ func (parser *Parser) parseParameters() []AST.Parameter {
 		dataType := parser.parseDataType()
 
 		args = append(args, AST.Parameter{
-			Name:     param.Lexeme,
+			Tok:      param,
 			DeclType: dataType,
 		})
 
@@ -43,7 +43,7 @@ func (parser *Parser) parseVariableDeclaration() AST.Declaration {
 	parser.expect(Token.SEMI_COLON)
 
 	return &AST.DeclarationVariable{
-		Name:     ident.Lexeme,
+		Tok:      ident,
 		DeclType: dataType,
 		RHS:      rhs,
 	}
@@ -58,7 +58,7 @@ func (parser *Parser) parseFunctionDeclaration() AST.Declaration {
 	block := parser.parseStatementBlock().(*AST.StatementBlock)
 
 	return &AST.DeclarationFunction{
-		Name:       ident.Lexeme,
+		Tok:        ident,
 		Parameters: params,
 		ReturnType: dataType,
 		Block:      block,

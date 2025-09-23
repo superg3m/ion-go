@@ -84,7 +84,7 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 	switch v := decl.(type) {
 	case *AST.DeclarationVariable:
 		desc := map[string]any{
-			"Name":     v.Name,
+			"Name":     v.Tok.Lexeme,
 			"DeclType": v.DeclType.String(),
 		}
 		return map[string]any{
@@ -97,7 +97,7 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 			body = append(body, nodeToJson(node))
 		}
 		desc := map[string]any{
-			"Name":     v.Name,
+			"Name":     v.Tok.Lexeme,
 			"DeclType": v.ReturnType.String(),
 			"Body":     body,
 		}

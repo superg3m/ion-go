@@ -194,28 +194,28 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 			v.DeclType = rhsType
 		}
 
-		env.set(v.Name, v)
+		env.set(v.Tok.Lexeme, v)
 
 		if v.DeclType.String() != rhsType.String() {
-			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.String(), v.DeclType.String()))
+			panic(fmt.Sprintf("Line: %d |  Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), v.DeclType.String()))
 		}
 
 	case *AST.DeclarationFunction:
-		if _, ok := globalFunctions[v.Name]; ok {
-			panic("Attempting to redeclare function " + v.Name)
+		if _, ok := globalFunctions[v.Tok.Lexeme]; ok {
+			panic("Attempting to redeclare function " + v.Tok.Lexeme)
 		} else {
-			globalFunctions[v.Name] = v
+			globalFunctions[v.Tok.Lexeme] = v
 		}
 
 		_, ok := v.Block.Body[len(v.Block.Body)-1].(*AST.StatementReturn)
 		if !ok && v.ReturnType.String() != "void" {
-			panic(fmt.Sprintf("Missing return type in %s() body", v.Name))
+			panic(fmt.Sprintf("Missing return type in %s() body", v.Tok.Lexeme))
 		}
 
 		funcEnv := NewTypeEnv(env)
 		for _, param := range v.Parameters {
-			funcEnv.set(param.Name, &AST.DeclarationVariable{
-				Name:     param.Name,
+			funcEnv.set(param.Tok.Lexeme, &AST.DeclarationVariable{
+				Tok:      param.Tok,
 				DeclType: param.DeclType,
 			})
 		}
@@ -223,12 +223,12 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 		for _, node := range v.Block.Body {
 			if ret, ok := node.(*AST.StatementReturn); ok {
 				if v.ReturnType.String() == "void" && ret.Expr != nil {
-					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Name))
+					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Tok.Lexeme))
 				}
 
 				retType := typeCheckExpression(ret.Expr, funcEnv)
 				if v.ReturnType.String() != retType.String() {
-					panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Name, v.ReturnType.String(), retType.String()))
+					panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.ReturnType.String(), retType.String()))
 				}
 
 				continue

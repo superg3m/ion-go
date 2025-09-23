@@ -1,23 +1,25 @@
 package AST
 
+import "ion-go/Token"
+
 type Declaration interface {
 	Node
 	isDeclaration()
 }
 
 type DeclarationVariable struct {
-	Name     string
+	Tok      Token.Token
 	DeclType DataType
 	RHS      Expression
 }
 
 type Parameter struct {
-	Name     string
+	Tok      Token.Token
 	DeclType DataType
 }
 
 type DeclarationFunction struct {
-	Name       string
+	Tok        Token.Token
 	Parameters []Parameter
 	ReturnType DataType
 	Block      *StatementBlock

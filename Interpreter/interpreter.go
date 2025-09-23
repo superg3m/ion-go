@@ -167,7 +167,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		for i := 0; i < argCount; i++ {
 			param := functionDeclaration.Parameters[i]
 			arg := v.Arguments[i]
-			functionScope.set(param.Name, interpretExpression(arg, scope))
+			functionScope.set(param.Tok.Lexeme, interpretExpression(arg, scope))
 		}
 
 		return interpretExpression(interpretNodes(functionDeclaration.Block.Body, &functionScope), &functionScope)
@@ -215,19 +215,19 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 	switch v := decl.(type) {
 	case *AST.DeclarationVariable:
-		if scope.has(v.Name) {
-			panic("Attempting to redeclare: " + v.Name)
+		if scope.has(v.Tok.Lexeme) {
+			panic("Attempting to redeclare: " + v.Tok.Lexeme)
 		}
 
 		v.RHS = interpretExpression(v.RHS, scope)
 		if v.RHS == nil {
-			panic("Attempting to assign void to variable: " + v.Name)
+			panic("Attempting to assign void to variable: " + v.Tok.Lexeme)
 		}
 
-		scope.set(v.Name, v.RHS)
+		scope.set(v.Tok.Lexeme, v.RHS)
 
 	case *AST.DeclarationFunction:
-		globalFunctions[v.Name] = v
+		globalFunctions[v.Tok.Lexeme] = v
 
 	}
 }
@@ -374,7 +374,7 @@ func InterpretProgram(program AST.Program) {
 
 	if mainDecl, ok := globalFunctions["main"]; ok {
 		mainCall := &AST.ExpressionFunctionCall{
-			Name: mainDecl.Name,
+			Name: mainDecl.Tok.Lexeme,
 		}
 
 		interpretExpression(mainCall, &globalScope)
