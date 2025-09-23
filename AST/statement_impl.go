@@ -14,3 +14,6 @@ func (*StatementReturn) isStatement() {}
 
 func (*StatementFor) isNode()      {}
 func (*StatementFor) isStatement() {}
+
+func (*StatementIfElse) isNode()      {}
+func (*StatementIfElse) isStatement() {}

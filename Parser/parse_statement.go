@@ -55,13 +55,32 @@ func (parser *Parser) parseForStatement() AST.Statement {
 	parser.expect(Token.SEMI_COLON)
 	increment := parser.parseAssignmentStatement()
 	parser.expect(Token.RIGHT_PAREN)
-	body := parser.parseStatement()
+	block := parser.parseStatementBlock()
 
 	return &AST.StatementFor{
 		Initializer: initializer.(*AST.DeclarationVariable),
 		Condition:   condition,
 		Increment:   increment.(*AST.StatementAssignment),
-		Block:       body.(*AST.StatementBlock),
+		Block:       block.(*AST.StatementBlock),
+	}
+}
+
+func (parser *Parser) parseIfElseStatement() AST.Statement {
+	parser.expect(Token.IF)
+	parser.expect(Token.LEFT_PAREN)
+	condition := parser.parseExpression()
+	parser.expect(Token.RIGHT_PAREN)
+	ifBlock := parser.parseStatementBlock()
+
+	var elseBlock *AST.StatementBlock = nil
+	if parser.consumeOnMatch(Token.ELSE) {
+		elseBlock = parser.parseStatementBlock().(*AST.StatementBlock)
+	}
+
+	return &AST.StatementIfElse{
+		Condition: condition,
+		IfBlock:   ifBlock.(*AST.StatementBlock),
+		ElseBlock: elseBlock,
 	}
 }
 

@@ -29,6 +29,12 @@ type StatementFor struct {
 	Block       *StatementBlock
 }
 
+type StatementIfElse struct {
+	Condition Expression
+	IfBlock   *StatementBlock
+	ElseBlock *StatementBlock
+}
+
 // Block
 // Assignment
 // VariableDeclaration
