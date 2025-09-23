@@ -46,7 +46,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 
 		dataType, ok := compatibleTypes(lt, rt)
 		if !ok {
-			panic(fmt.Sprintf("type check failed: lt %v rt %v", lt.String(), rt.String()))
+			panic(fmt.Sprintf("Line: %d | type check failed: left %v right %v", v.Operator.Line, lt.String(), rt.String()))
 		}
 
 		switch v.Operator.Kind {
@@ -101,11 +101,11 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		}
 
 		v.DeclType = firstElementType
-		return AST.CreateDataType(v.DeclType.String() + AST.ARRAY)
+		return AST.CreateDataType(AST.ARRAY + v.DeclType.String())
 
 	case *AST.ExpressionArrayAccess:
 		decl := env.get(v.Name)
-		accessType := decl.DeclType.String()[:len(decl.DeclType.String())-2]
+		accessType := decl.DeclType.String()[2:len(decl.DeclType.String())]
 
 		return AST.CreateDataType(accessType)
 
