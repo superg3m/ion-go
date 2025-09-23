@@ -9,6 +9,8 @@
 - Pointer
 
 - Errors
+    - Should give you file and line
+    - Tokens should probably just store the filename even tho that seems so wasteful...
 
 - Finish the AST pretty print
 
