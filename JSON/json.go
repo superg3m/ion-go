@@ -14,6 +14,8 @@ func expressionToJson(e AST.Expression) any {
 		return v.Value
 	case *AST.ExpressionBoolean:
 		return v.Value
+	case *AST.ExpressionString:
+		return v.Value
 
 	case *AST.ExpressionIdentifier:
 		return map[string]any{
@@ -35,7 +37,14 @@ func expressionToJson(e AST.Expression) any {
 		}
 
 	case *AST.ExpressionArrayAccess:
-		return map[string]any{}
+		return map[string]any{
+			"ArrayAccess": v.Tok.Lexeme,
+		}
+
+	case *AST.ExpressionLen:
+		return map[string]any{
+			"ExpressionLen": expressionToJson(v.Array),
+		}
 
 	default:
 		panic(fmt.Sprintf("%T", v))
@@ -44,7 +53,7 @@ func expressionToJson(e AST.Expression) any {
 	return nil
 }
 
-func statementToJson(s AST.Statement) map[string]any {
+func statementToJson(s AST.Statement) any {
 	switch v := s.(type) {
 	case *AST.StatementAssignment:
 		return map[string]any{
@@ -59,24 +68,55 @@ func statementToJson(s AST.Statement) map[string]any {
 			"ReturnStatement": expressionToJson(v.Expr),
 		}
 
+	case *AST.StatementContinue:
+		return "ContinueStatement"
+
+	case *AST.StatementBreak:
+		return "BreakStatement"
+
 	case *AST.StatementPrint:
 		return map[string]any{
 			"PrintStatement": expressionToJson(v.Expr),
 		}
 
-		// TODO(Jovanni): Actually implement this
+	case *AST.StatementBlock:
+		var body []any
+		for _, node := range v.Body {
+			body = append(body, nodeToJson(node))
+		}
+
+		return map[string]any{
+			"StatementBlock": body,
+		}
+
 	case *AST.StatementFor:
-		return map[string]any{}
+		return map[string]any{
+			"ForStatement": map[string]any{
+				"Initializer": declarationToJson(v.Initializer),
+				"Condition":   expressionToJson(v.Condition),
+				"Increment":   statementToJson(v.Increment),
+				"Block":       statementToJson(v.Block),
+			},
+		}
 
 	case *AST.StatementIfElse:
-		return map[string]any{}
+		var elseBlockJson any = nil
+		if v.ElseBlock != nil {
+			elseBlockJson = statementToJson(v.ElseBlock)
+		}
 
-	case *AST.StatementBreak:
-		return map[string]any{}
+		return map[string]any{
+			"IfElseStatement": map[string]any{
+				"Condition": expressionToJson(v.Condition),
+				"IfBlock":   statementToJson(v.IfBlock),
+				"ElseBlock": elseBlockJson,
+			},
+		}
 
 	default:
 		panic(fmt.Sprintf("%T", v))
 	}
+
 	return nil
 }
 
@@ -108,6 +148,7 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 	default:
 		panic(fmt.Sprintf("%T", v))
 	}
+
 	return nil
 }
 
