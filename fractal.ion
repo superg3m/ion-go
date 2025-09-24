@@ -1,0 +1,46 @@
+var leftEdge   := -520.0;
+var rightEdge  := 300.0;
+var topEdge    := 300.0;
+var bottomEdge := -300.0;
+var xStep      := 3.0;
+var yStep      := 7.0;
+
+var maxIter    := 100.0;
+
+fn main () -> void {
+    for (var y0 := topEdge; y0 > bottomEdge; y0 = y0 - yStep) {
+        for (var x0 := leftEdge; x0 < rightEdge; x0 = x0 + xStep) {
+            var x := 0.0;
+            var y := 0.0;
+            var i := 0.0;
+            var theChar := " ";
+
+            while (i < maxIter) {
+                var x_x := (x * x) / 200.0;
+                var y_y := (y * y) / 200.0;
+
+                if (y == 300.0) {
+                    print(y + "\n");
+                }
+
+                if ((x_x + y_y) > 800.0) {
+                    if (i > 9) {
+                        theChar = "@";
+                    } else {
+                        theChar = "" + i;
+                    }
+
+                    i = maxIter;
+                }
+
+                y = ((x * y) / 100.0) + y0;
+                x = x_x - y_y + x0;
+
+                i = i + 1;
+            }
+
+            print(theChar);
+        }
+        print("\n");
+    }
+}

@@ -21,5 +21,8 @@ func (*StatementContinue) isStatement() {}
 func (*StatementFor) isNode()      {}
 func (*StatementFor) isStatement() {}
 
+func (*StatementWhile) isNode()      {}
+func (*StatementWhile) isStatement() {}
+
 func (*StatementIfElse) isNode()      {}
 func (*StatementIfElse) isStatement() {}

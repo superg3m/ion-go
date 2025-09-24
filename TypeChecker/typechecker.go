@@ -96,6 +96,12 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 
 		return TS.NewType(TS.INTEGER, nil, nil)
 
+	case *AST.ExpressionUnary:
+		return typeCheckExpression(v.Operand, env)
+
+	case *AST.ExpressionGrouping:
+		return typeCheckExpression(v.Expr, env)
+
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
 	}
@@ -110,7 +116,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		rhsType := typeCheckExpression(v.RHS, env)
 
 		if !TS.TypeCompare(decl.DeclType, rhsType) {
-			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.String(), decl.DeclType.String()))
+			panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), decl.DeclType.String()))
 		}
 
 	case *AST.StatementPrint:
@@ -132,6 +138,18 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		}
 
 		typeCheckStatement(v.Increment, env)
+
+		env.CurrentStatus = IN_LOOP
+		for _, node := range v.Block.Body {
+			typeCheckNode(node, env)
+		}
+		env.CurrentStatus = NORMAL
+
+	case *AST.StatementWhile:
+		condition := typeCheckExpression(v.Condition, env)
+		if condition.Kind != TS.BOOL {
+			panic("For statement condition doesn't resolve to a bool it resolves to: " + condition.String())
+		}
 
 		env.CurrentStatus = IN_LOOP
 		for _, node := range v.Block.Body {

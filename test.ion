@@ -8,11 +8,11 @@ fn do_something(arr: []float, y: int, z: float) -> float {
         x = x + arr[i];
 
         if (x <= 35) {
-            print("Hello: " + x);
+            print("Hello: " + x + "\n");
             continue;
         }
 
-        print("World!");
+        print("World!\n");
     }
 
     x = 3.0;
@@ -27,12 +27,13 @@ fn do_something(arr: []float, y: int, z: float) -> float {
 
 fn main() -> void {
     var arr2 := [][]float.[[1.54, 3.5], [4.2]];
-    print(arr2[0][1]);
+    print(arr2[0][1] + "\n");
 
     var test := 5.5;
     var arr := []float.[1.5, test];
     var kldfjdskljf: float = 64 + do_something(arr, 6, 5.0);
 
-    print(kldfjdskljf);
+    print(kldfjdskljf + "\n");
     print(arr);
+    print("\n");
 }

@@ -68,6 +68,18 @@ func (parser *Parser) parseForStatement() AST.Statement {
 		Block:       block.(*AST.StatementBlock),
 	}
 }
+func (parser *Parser) parseWhileStatement() AST.Statement {
+	parser.expect(Token.WHILE)
+	parser.expect(Token.LEFT_PAREN)
+	condition := parser.parseExpression()
+	parser.expect(Token.RIGHT_PAREN)
+	block := parser.parseStatementBlock()
+
+	return &AST.StatementWhile{
+		Condition: condition,
+		Block:     block.(*AST.StatementBlock),
+	}
+}
 
 func (parser *Parser) parseIfElseStatement() AST.Statement {
 	parser.expect(Token.IF)
@@ -117,6 +129,8 @@ func (parser *Parser) parseStatement() AST.Statement {
 		return &AST.StatementContinue{}
 	} else if current.Kind == Token.FOR {
 		return parser.parseForStatement()
+	} else if current.Kind == Token.WHILE {
+		return parser.parseWhileStatement()
 	} else if current.Kind == Token.IF {
 		return parser.parseIfElseStatement()
 	}

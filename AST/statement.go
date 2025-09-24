@@ -34,6 +34,11 @@ type StatementFor struct {
 	Block       *StatementBlock
 }
 
+type StatementWhile struct {
+	Condition Expression
+	Block     *StatementBlock
+}
+
 type StatementIfElse struct {
 	Condition Expression
 	IfBlock   *StatementBlock

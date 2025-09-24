@@ -54,7 +54,7 @@ func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression)
 		}
 
 		if rhs, ok1 := right.(*AST.ExpressionString); ok1 {
-			switch lhs := right.(type) {
+			switch lhs := left.(type) {
 			case *AST.ExpressionInteger:
 				return evaluateString(kind, fmt.Sprintf("%d", lhs.Value), rhs.Value)
 			case *AST.ExpressionFloat:
@@ -119,6 +119,10 @@ func evaluateFloats(kind Token.TokenType, lhs, rhs float32) AST.Expression {
 		return &AST.ExpressionFloat{Value: lhs * rhs}
 	case Token.DIVISION:
 		return &AST.ExpressionFloat{Value: lhs / rhs}
+	case Token.EQUALS_EQUALS:
+		return &AST.ExpressionBoolean{Value: lhs == rhs}
+	case Token.NOT_EQUALS:
+		return &AST.ExpressionBoolean{Value: lhs != rhs}
 	case Token.LESS_THAN:
 		return &AST.ExpressionBoolean{Value: lhs < rhs}
 	case Token.LESS_THAN_EQUALS:
@@ -126,10 +130,6 @@ func evaluateFloats(kind Token.TokenType, lhs, rhs float32) AST.Expression {
 	case Token.GREATER_THAN:
 		return &AST.ExpressionBoolean{Value: lhs > rhs}
 	case Token.GREATER_THAN_EQUALS:
-		return &AST.ExpressionBoolean{Value: lhs >= rhs}
-	case Token.EQUALS_EQUALS:
-		return &AST.ExpressionBoolean{Value: lhs >= rhs}
-	case Token.NOT_EQUALS:
 		return &AST.ExpressionBoolean{Value: lhs >= rhs}
 	}
 	panic("unreachable")
@@ -142,6 +142,23 @@ func evaluateString(kind Token.TokenType, lhs, rhs string) AST.Expression {
 	}
 
 	panic("unreachable")
+}
+
+func interpretUnaryExpression(kind Token.TokenType, operand AST.Expression) AST.Expression {
+	switch kind {
+	case Token.MINUS:
+		switch v := operand.(type) {
+		case *AST.ExpressionInteger:
+			return &AST.ExpressionInteger{Value: -v.Value}
+		case *AST.ExpressionFloat:
+			return &AST.ExpressionFloat{Value: -v.Value}
+
+		default:
+			panic(fmt.Sprintf("unhandled operator: %v", kind))
+		}
+	default:
+		panic(fmt.Sprintf("unhandled operator: %v", kind))
+	}
 }
 
 func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
@@ -206,6 +223,10 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 	case *AST.ExpressionPseudo:
 		return interpretExpression(v.Expr, scope)
 
+	case *AST.ExpressionUnary:
+		operand := interpretExpression(v.Operand, scope)
+		return interpretUnaryExpression(v.Operator.Kind, operand)
+
 	default:
 		fmt.Printf("Type: %T\n", e)
 		panic("unreachable")
@@ -232,6 +253,21 @@ func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 	}
 }
 
+func fixNewLineCode(s string) string {
+	var ret []byte
+
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && s[i+1] == 'n' {
+			ret = append(ret, '\n')
+			i += 1
+		} else {
+			ret = append(ret, s[i])
+		}
+	}
+
+	return string(ret)
+}
+
 func printExpression(expr AST.Expression, scope *Scope) {
 	switch v := expr.(type) {
 	case *AST.ExpressionInteger:
@@ -244,7 +280,7 @@ func printExpression(expr AST.Expression, scope *Scope) {
 		fmt.Print(v.Value)
 
 	case *AST.ExpressionString:
-		fmt.Print(v.Value)
+		fmt.Print(fixNewLineCode(v.Value))
 
 	case *AST.ExpressionIdentifier:
 		printExpression(scope.get(v.Tok), scope)
@@ -268,7 +304,6 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	switch v := s.(type) {
 	case *AST.StatementPrint:
 		printExpression(interpretExpression(v.Expr, scope), scope)
-		fmt.Println("")
 
 		return nil
 
@@ -307,6 +342,24 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 			}
 
 			interpretStatement(v.Increment, &forScope)
+		}
+
+		return nil
+
+	case *AST.StatementWhile:
+		whileScope := CreateScope(scope)
+		for interpretExpression(v.Condition, &whileScope).(*AST.ExpressionBoolean).Value {
+			blockRet := interpretStatement(v.Block, &whileScope)
+			if pseudo, ok := blockRet.(*AST.ExpressionPseudo); ok {
+				if pseudo.Behavior == AST.BREAK {
+					break
+				} else if pseudo.Behavior == AST.RETURN {
+					return pseudo.Expr
+				} else if pseudo.Behavior == AST.CONTINUE {
+				} else {
+					panic("unreachable")
+				}
+			}
 		}
 
 		return nil

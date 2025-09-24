@@ -176,6 +176,7 @@ func GetPromotedType(op Token.Token, leftType, rightType *Type) TypeKind {
 
 		{"%", INTEGER, INTEGER}: INTEGER,
 
+		{"+", STRING, STRING}:  STRING,
 		{"+", STRING, INTEGER}: STRING,
 		{"+", STRING, FLOAT}:   STRING,
 		{"+", INTEGER, STRING}: STRING,

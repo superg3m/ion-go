@@ -47,6 +47,16 @@ func expressionToJson(e AST.Expression) any {
 			"ExpressionLen": expressionToJson(v.Array),
 		}
 
+	case *AST.ExpressionUnary:
+		return map[string]any{
+			"ExpressionUnary": expressionToJson(v.Operand),
+		}
+
+	case *AST.ExpressionGrouping:
+		return map[string]any{
+			"ExpressionGrouping": expressionToJson(v.Expr),
+		}
+
 	default:
 		panic(fmt.Sprintf("%T", v))
 	}
@@ -97,6 +107,14 @@ func statementToJson(s AST.Statement) any {
 				"Condition":   expressionToJson(v.Condition),
 				"Increment":   statementToJson(v.Increment),
 				"Block":       statementToJson(v.Block),
+			},
+		}
+
+	case *AST.StatementWhile:
+		return map[string]any{
+			"WhileStatement": map[string]any{
+				"Condition": expressionToJson(v.Condition),
+				"Block":     statementToJson(v.Block),
 			},
 		}
 
