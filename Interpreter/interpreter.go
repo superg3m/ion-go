@@ -240,12 +240,12 @@ func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 			panic("Attempting to redeclare: " + v.Tok.Lexeme)
 		}
 
-		v.RHS = interpretExpression(v.RHS, scope)
-		if v.RHS == nil {
+		temp := interpretExpression(v.RHS, scope)
+		if temp == nil {
 			panic("Attempting to assign void to variable: " + v.Tok.Lexeme)
 		}
 
-		scope.set(v.Tok, v.RHS)
+		scope.set(v.Tok, temp)
 
 	case *AST.DeclarationFunction:
 		globalFunctions[v.Tok.Lexeme] = v
@@ -347,9 +347,8 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		return nil
 
 	case *AST.StatementWhile:
-		whileScope := CreateScope(scope)
-		for interpretExpression(v.Condition, &whileScope).(*AST.ExpressionBoolean).Value {
-			blockRet := interpretStatement(v.Block, &whileScope)
+		for interpretExpression(v.Condition, scope).(*AST.ExpressionBoolean).Value {
+			blockRet := interpretStatement(v.Block, scope)
 			if pseudo, ok := blockRet.(*AST.ExpressionPseudo); ok {
 				if pseudo.Behavior == AST.BREAK {
 					break
