@@ -40,7 +40,9 @@ func (parser *Parser) parseAssignmentStatement() AST.Statement {
 	ident := parser.expect(Token.IDENTIFIER)
 	parser.expect(Token.EQUALS)
 	rhs := parser.parseExpression()
-	parser.expect(Token.SEMI_COLON)
+	if !parser.ctx.ParsingForIncrement {
+		parser.expect(Token.SEMI_COLON)
+	}
 
 	return &AST.StatementAssignment{
 		Tok: ident,
@@ -53,7 +55,9 @@ func (parser *Parser) parseForStatement() AST.Statement {
 	initializer := parser.parseVariableDeclaration()
 	condition := parser.parseExpression()
 	parser.expect(Token.SEMI_COLON)
+	parser.ctx.ParsingForIncrement = true
 	increment := parser.parseAssignmentStatement()
+	parser.ctx.ParsingForIncrement = false
 	parser.expect(Token.RIGHT_PAREN)
 	block := parser.parseStatementBlock()
 

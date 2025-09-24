@@ -13,7 +13,7 @@ func (parser *Parser) parseParameters() []TS.Parameter {
 	for !parser.consumeOnMatch(Token.RIGHT_PAREN) {
 		param := parser.expect(Token.IDENTIFIER)
 		parser.expect(Token.COLON)
-		dataType := parser.parseDataType()
+		dataType := parser.parseType()
 
 		args = append(args, TS.Parameter{
 			Tok:      param,
@@ -36,7 +36,7 @@ func (parser *Parser) parseVariableDeclaration() AST.Declaration {
 	if parser.peekNthToken(0).Kind == Token.EQUALS {
 		parser.expect(Token.EQUALS)
 	} else {
-		dataType = parser.parseDataType()
+		dataType = parser.parseType()
 		parser.expect(Token.EQUALS)
 	}
 
@@ -55,7 +55,7 @@ func (parser *Parser) parseFunctionDeclaration() AST.Declaration {
 	ident := parser.expect(Token.IDENTIFIER)
 	params := parser.parseParameters()
 	parser.expect(Token.RIGHT_ARROW)
-	returnType := parser.parseDataType()
+	returnType := parser.parseType()
 	block := parser.parseStatementBlock().(*AST.StatementBlock)
 
 	declType := TS.NewType(TS.FUNCTION, returnType, params)

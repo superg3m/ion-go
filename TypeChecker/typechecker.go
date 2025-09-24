@@ -63,20 +63,18 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		return decl.DeclType.GetReturnType()
 
 	case *AST.ExpressionArray:
-		firstElementType := TS.NewType(TS.INVALID_TYPE, nil, nil)
 		for i, element := range v.Elements {
-			elementType := typeCheckExpression(element, env)
-			if firstElementType.Kind == TS.INVALID_TYPE {
-				firstElementType = elementType
+			if ref, ok := element.(*AST.ExpressionArray); ok {
+				ref.DeclType = v.DeclType.RemoveArrayModifier()
 			}
 
-			if !TS.TypeCompare(elementType, firstElementType) {
-				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, firstElementType.String(), elementType.String()))
+			elementType := typeCheckExpression(element, env)
+			if !TS.TypeCompare(elementType, v.DeclType.RemoveArrayModifier()) {
+				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, v.DeclType.RemoveArrayModifier().String(), elementType.String()))
 			}
 		}
 
-		v.DeclType = firstElementType
-		return TS.NewType(TS.ARRAY, v.DeclType, nil)
+		return v.DeclType
 
 	case *AST.ExpressionArrayAccess:
 		decl := env.get(v.Tok)

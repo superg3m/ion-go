@@ -8,14 +8,15 @@ import (
 )
 
 type Context struct {
-	//parsingArrayExpression
+	ParsingForIncrement bool
+	ParsingArrayLiteral bool
 }
 
 type Parser struct {
 	tokens  []Token.Token
 	current int
 
-	//ctx Context
+	ctx Context
 }
 
 func (parser *Parser) consumeNextToken() Token.Token {
@@ -59,7 +60,7 @@ func (parser *Parser) previousToken() Token.Token {
 	return parser.tokens[parser.current-1]
 }
 
-func (parser *Parser) parseDataType() *TS.Type {
+func (parser *Parser) parseType() *TS.Type {
 	arrayCount := 0
 	for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {
 		parser.consumeOnMatch(Token.LEFT_BRACKET)
