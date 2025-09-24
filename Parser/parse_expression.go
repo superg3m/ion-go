@@ -178,12 +178,12 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 	var elements []AST.Expression
 
 	declType := TS.NewType(TS.ARRAY, nil, nil)
-	if !parser.ctx.ParsingArrayLiteral {
+	if parser.ctx.ParsingArrayLiteral == 0 {
 		declType = parser.parseType()
 		parser.expect(Token.DOT)
 	}
 
-	parser.ctx.ParsingArrayLiteral = true
+	parser.ctx.ParsingArrayLiteral += 1
 	parser.expect(Token.LEFT_BRACKET)
 	for !parser.consumeOnMatch(Token.RIGHT_BRACKET) {
 		expr := parser.parseExpression()
@@ -193,7 +193,7 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 			parser.expect(Token.COMMA)
 		}
 	}
-	parser.ctx.ParsingArrayLiteral = false
+	parser.ctx.ParsingArrayLiteral -= 1
 
 	return &AST.ExpressionArray{
 		Elements: elements,

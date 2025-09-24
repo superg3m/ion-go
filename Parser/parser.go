@@ -9,7 +9,7 @@ import (
 
 type Context struct {
 	ParsingForIncrement bool
-	ParsingArrayLiteral bool
+	ParsingArrayLiteral int
 }
 
 type Parser struct {
