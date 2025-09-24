@@ -57,6 +57,11 @@ func expressionToJson(e AST.Expression) any {
 			"ExpressionGrouping": expressionToJson(v.Expr),
 		}
 
+	case *AST.ExpressionFunctionCall:
+		return map[string]any{
+			"FunctionCall": nil,
+		}
+
 	default:
 		panic(fmt.Sprintf("%T", v))
 	}
