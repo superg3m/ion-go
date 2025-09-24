@@ -7,9 +7,15 @@ import (
 	"ion-go/Token"
 )
 
+type Context struct {
+	//parsingArrayExpression
+}
+
 type Parser struct {
 	tokens  []Token.Token
 	current int
+
+	//ctx Context
 }
 
 func (parser *Parser) consumeNextToken() Token.Token {

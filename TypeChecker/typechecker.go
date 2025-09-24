@@ -167,7 +167,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 	switch v := decl.(type) {
 	case *AST.DeclarationVariable:
 		rhsType := typeCheckExpression(v.RHS, env)
-		if v.DeclType.String() == "" {
+		if v.DeclType == nil || v.DeclType.Kind == TS.INVALID_TYPE {
 			v.DeclType = rhsType
 		}
 

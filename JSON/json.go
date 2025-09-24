@@ -1,6 +1,7 @@
 package JSON
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"ion-go/AST"
@@ -169,13 +170,29 @@ func nodeToJson(node AST.Node) any {
 	return nil
 }
 
+func MarshalIndentNoEscape(v any, prefix, indent string) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent(prefix, indent)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	// Encode always appends a newline; strip it if you don’t want it
+	out := buf.Bytes()
+	if len(out) > 0 && out[len(out)-1] == '\n' {
+		out = out[:len(out)-1]
+	}
+	return out, nil
+}
+
 func PrettyPrint(program AST.Program) {
 	var declarations []any
 	for _, decl := range program.Declarations {
 		declarations = append(declarations, declarationToJson(decl))
 	}
 
-	indent, err := json.MarshalIndent(map[string]any{"Declarations": declarations}, "", "    ")
+	indent, err := MarshalIndentNoEscape(map[string]any{"Declarations": declarations}, "", "    ")
 	if err != nil {
 		return
 	}
