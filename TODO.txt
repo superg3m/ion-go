@@ -12,12 +12,7 @@
     - Should give you file and line
     - Tokens should probably just store the filename even tho that seems so wasteful...
 
-- Finish the AST pretty print
-
 - Are you comp-time known
     - [] Literals are comp-time
 
 - How do we do type casting
-
-- Add some type of ParseContext
-    - Are you currently parsing an array literal for example?
