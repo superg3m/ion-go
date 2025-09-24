@@ -55,7 +55,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			param := functionDeclaration.DeclType.Parameters[i]
 			argType := typeCheckExpression(v.Arguments[i], env)
 
-			if param.DeclType.String() != argType.String() {
+			if !TS.TypeCompare(param.DeclType, argType) {
 				panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, argType.String(), param.DeclType.String()))
 			}
 		}
@@ -70,7 +70,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 				firstElementType = elementType
 			}
 
-			if elementType.String() != firstElementType.String() {
+			if !TS.TypeCompare(elementType, firstElementType) {
 				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, firstElementType.String(), elementType.String()))
 			}
 		}
@@ -111,7 +111,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		decl := env.get(v.Tok)
 		rhsType := typeCheckExpression(v.RHS, env)
 
-		if decl.DeclType.String() != rhsType.String() {
+		if !TS.TypeCompare(decl.DeclType, rhsType) {
 			panic(fmt.Sprintf("Can't assign type %s to type %s", rhsType.String(), decl.DeclType.String()))
 		}
 
@@ -129,7 +129,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 	case *AST.StatementFor:
 		typeCheckDeclaration(v.Initializer, env)
 		condition := typeCheckExpression(v.Condition, env)
-		if condition.String() != "bool" {
+		if condition.Kind != TS.BOOL {
 			panic("For statement condition doesn't resolve to a bool it resolves to: " + condition.String())
 		}
 
@@ -143,7 +143,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 
 	case *AST.StatementIfElse:
 		condition := typeCheckExpression(v.Condition, env)
-		if condition.String() != "bool" {
+		if condition.Kind != TS.BOOL {
 			panic("For statement condition doesn't resolve to a bool it resolves to: " + condition.String())
 		}
 
@@ -173,7 +173,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 		env.set(v.Tok, v)
 
-		if v.DeclType.String() != rhsType.String() {
+		if !TS.TypeCompare(v.DeclType, rhsType) {
 			panic(fmt.Sprintf("Line: %d |  Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), v.DeclType.String()))
 		}
 
