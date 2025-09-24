@@ -123,6 +123,10 @@ func (lexer *Lexer) consumeSyntax() bool {
 		if lexer.consumeOnMatch('&') {
 		}
 
+	case '|':
+		if lexer.consumeOnMatch('|') {
+		}
+
 	case '[':
 		if lexer.consumeOnMatch('.') {
 			lexer.consumeNextChar() // should be .
