@@ -2,11 +2,12 @@ package Parser
 
 import (
 	"ion-go/AST"
+	"ion-go/TS"
 	"ion-go/Token"
 )
 
-func (parser *Parser) parseParameters() []AST.Parameter {
-	var args []AST.Parameter
+func (parser *Parser) parseParameters() []TS.Parameter {
+	var args []TS.Parameter
 
 	parser.expect(Token.LEFT_PAREN)
 	for !parser.consumeOnMatch(Token.RIGHT_PAREN) {
@@ -14,7 +15,7 @@ func (parser *Parser) parseParameters() []AST.Parameter {
 		parser.expect(Token.COLON)
 		dataType := parser.parseDataType()
 
-		args = append(args, AST.Parameter{
+		args = append(args, TS.Parameter{
 			Tok:      param,
 			DeclType: dataType,
 		})
@@ -31,7 +32,7 @@ func (parser *Parser) parseVariableDeclaration() AST.Declaration {
 	parser.expect(Token.VAR)
 	ident := parser.expect(Token.IDENTIFIER)
 	parser.expect(Token.COLON)
-	var dataType AST.DataType
+	var dataType *TS.Type
 	if parser.peekNthToken(0).Kind == Token.EQUALS {
 		parser.expect(Token.EQUALS)
 	} else {
@@ -54,14 +55,15 @@ func (parser *Parser) parseFunctionDeclaration() AST.Declaration {
 	ident := parser.expect(Token.IDENTIFIER)
 	params := parser.parseParameters()
 	parser.expect(Token.RIGHT_ARROW)
-	dataType := parser.parseDataType()
+	returnType := parser.parseDataType()
 	block := parser.parseStatementBlock().(*AST.StatementBlock)
 
+	declType := TS.NewType(TS.FUNCTION, returnType, params)
+
 	return &AST.DeclarationFunction{
-		Tok:        ident,
-		Parameters: params,
-		ReturnType: dataType,
-		Block:      block,
+		Tok:      ident,
+		DeclType: declType,
+		Block:    block,
 	}
 }
 

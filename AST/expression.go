@@ -1,6 +1,9 @@
 package AST
 
-import "ion-go/Token"
+import (
+	"ion-go/TS"
+	"ion-go/Token"
+)
 
 type Expression interface {
 	Node
@@ -49,7 +52,7 @@ type ExpressionFunctionCall struct {
 
 type ExpressionArray struct {
 	Elements []Expression
-	DeclType DataType
+	DeclType *TS.Type
 }
 
 type ExpressionLen struct {

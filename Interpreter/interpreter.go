@@ -157,7 +157,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 	case *AST.ExpressionFunctionCall:
 		functionDeclaration := globalFunctions[v.Tok.Lexeme]
 		argCount := len(v.Arguments)
-		paramCount := len(functionDeclaration.Parameters)
+		paramCount := len(functionDeclaration.DeclType.Parameters)
 
 		if paramCount != argCount {
 			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
@@ -165,7 +165,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 		functionScope := CreateScope(&globalScope)
 		for i := 0; i < argCount; i++ {
-			param := functionDeclaration.Parameters[i]
+			param := functionDeclaration.DeclType.Parameters[i]
 			arg := v.Arguments[i]
 			functionScope.set(param.Tok, interpretExpression(arg, scope))
 		}

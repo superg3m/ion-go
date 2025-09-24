@@ -2,6 +2,7 @@ package Parser
 
 import (
 	"ion-go/AST"
+	"ion-go/TS"
 	"ion-go/Token"
 	"strconv"
 )
@@ -188,7 +189,7 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 
 	return &AST.ExpressionArray{
 		Elements: elements,
-		DeclType: AST.CreateDataType(""),
+		DeclType: TS.NewType(TS.ARRAY, nil, nil),
 	}
 }
 

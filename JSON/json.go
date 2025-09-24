@@ -138,7 +138,7 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 		}
 		desc := map[string]any{
 			"Name":     v.Tok.Lexeme,
-			"DeclType": v.ReturnType.String(),
+			"DeclType": v.DeclType.String(),
 			"Body":     body,
 		}
 		return map[string]any{

@@ -3,6 +3,7 @@ package Parser
 import (
 	"fmt"
 	"ion-go/AST"
+	"ion-go/TS"
 	"ion-go/Token"
 )
 
@@ -52,7 +53,7 @@ func (parser *Parser) previousToken() Token.Token {
 	return parser.tokens[parser.current-1]
 }
 
-func (parser *Parser) parseDataType() AST.DataType {
+func (parser *Parser) parseDataType() *TS.Type {
 	arrayCount := 0
 	for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {
 		parser.consumeOnMatch(Token.LEFT_BRACKET)
@@ -61,13 +62,13 @@ func (parser *Parser) parseDataType() AST.DataType {
 	}
 	dataTypeToken := parser.expect(Token.IDENTIFIER)
 
-	ret := ""
-	for i := 0; i < arrayCount; i++ {
-		ret += AST.ARRAY
-	}
-	ret += dataTypeToken.Lexeme
+	retType := TS.NewType(TS.TypeKind(dataTypeToken.Lexeme), nil, nil)
 
-	return AST.CreateDataType(ret)
+	for i := 0; i < arrayCount; i++ {
+		retType = retType.AddArrayModifier()
+	}
+
+	return retType
 }
 
 func ParseProgram(tokens []Token.Token) AST.Program {

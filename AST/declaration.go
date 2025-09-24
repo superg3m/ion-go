@@ -1,6 +1,9 @@
 package AST
 
-import "ion-go/Token"
+import (
+	"ion-go/TS"
+	"ion-go/Token"
+)
 
 type Declaration interface {
 	Node
@@ -9,18 +12,12 @@ type Declaration interface {
 
 type DeclarationVariable struct {
 	Tok      Token.Token
-	DeclType DataType
+	DeclType *TS.Type
 	RHS      Expression
 }
 
-type Parameter struct {
-	Tok      Token.Token
-	DeclType DataType
-}
-
 type DeclarationFunction struct {
-	Tok        Token.Token
-	Parameters []Parameter
-	ReturnType DataType
-	Block      *StatementBlock
+	Tok      Token.Token
+	DeclType *TS.Type
+	Block    *StatementBlock
 }

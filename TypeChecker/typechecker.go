@@ -3,38 +3,24 @@ package TypeChecker
 import (
 	"fmt"
 	"ion-go/AST"
-	"ion-go/Token"
+	"ion-go/TS"
 )
 
 var globalFunctions map[string]*AST.DeclarationFunction
 
-func compatibleTypes(lt, rt AST.DataType) (AST.DataType, bool) {
-	if lt.String() == rt.String() {
-		return lt, true
-	} else if lt.String() == "float" && rt.String() == "int" {
-		return lt, true
-	} else if lt.String() == "int" && rt.String() == "float" {
-		return rt, true
-	} else if lt.String() == "string" || rt.String() == "string" {
-		return AST.CreateDataType("string"), true
-	}
-
-	return AST.CreateDataType(""), false
-}
-
-func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
+func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 	switch v := e.(type) {
 	case *AST.ExpressionInteger:
-		return AST.CreateDataType("int")
+		return TS.NewType(TS.INTEGER, nil, nil)
 
 	case *AST.ExpressionFloat:
-		return AST.CreateDataType("float")
+		return TS.NewType(TS.FLOAT, nil, nil)
 
 	case *AST.ExpressionBoolean:
-		return AST.CreateDataType("bool")
+		return TS.NewType(TS.BOOL, nil, nil)
 
 	case *AST.ExpressionString:
-		return AST.CreateDataType("string")
+		return TS.NewType(TS.STRING, nil, nil)
 
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Tok)
@@ -44,23 +30,12 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		lt := typeCheckExpression(v.Left, env)
 		rt := typeCheckExpression(v.Right, env)
 
-		dataType, ok := compatibleTypes(lt, rt)
-		if !ok {
-			panic(fmt.Sprintf("Line: %d | type check failed: left %v right %v", v.Operator.Line, lt.String(), rt.String()))
+		promotedType := TS.GetPromotedType(v.Operator, lt, rt)
+		if promotedType == TS.INVALID_TYPE {
+			panic(fmt.Sprintf("Typechecking error Line %d | Operation %s not supported on Left: %s | Right: %s", v.Operator.Line, v.Operator.Lexeme, lt.String(), rt.String()))
 		}
 
-		switch v.Operator.Kind {
-		case Token.EQUALS_EQUALS, Token.NOT_EQUALS, Token.LESS_THAN,
-			Token.LESS_THAN_EQUALS, Token.GREATER_THAN_EQUALS, Token.GREATER_THAN:
-			return AST.CreateDataType("bool")
-
-		case Token.PLUS, Token.MINUS, Token.STAR, Token.DIVISION, Token.MODULUS:
-			return dataType
-
-		default:
-			panic(fmt.Sprintf("Undefined binary: %s", v.Operator.Kind))
-
-		}
+		return TS.NewType(promotedType, nil, nil)
 
 	case *AST.ExpressionFunctionCall:
 		decl, ok := globalFunctions[v.Tok.Lexeme]
@@ -70,28 +45,28 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 
 		functionDeclaration := globalFunctions[v.Tok.Lexeme]
 		argCount := len(v.Arguments)
-		paramCount := len(functionDeclaration.Parameters)
+		paramCount := len(functionDeclaration.DeclType.Parameters)
 
 		if paramCount != argCount {
 			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
 		}
 
 		for i := 0; i < argCount; i++ {
-			param := functionDeclaration.Parameters[i]
+			param := functionDeclaration.DeclType.Parameters[i]
 			argType := typeCheckExpression(v.Arguments[i], env)
 
 			if param.DeclType.String() != argType.String() {
-				panic(fmt.Sprintf("argument %d: expected %s, got %s", i, argType.String(), param.DeclType.String()))
+				panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, argType.String(), param.DeclType.String()))
 			}
 		}
 
-		return decl.ReturnType
+		return decl.DeclType.GetReturnType()
 
 	case *AST.ExpressionArray:
-		firstElementType := AST.CreateDataType("")
+		firstElementType := TS.NewType(TS.INVALID_TYPE, nil, nil)
 		for i, element := range v.Elements {
 			elementType := typeCheckExpression(element, env)
-			if firstElementType.String() == "" {
+			if firstElementType.Kind == TS.INVALID_TYPE {
 				firstElementType = elementType
 			}
 
@@ -101,33 +76,33 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) AST.DataType {
 		}
 
 		v.DeclType = firstElementType
-		return AST.CreateDataType(AST.ARRAY + v.DeclType.String())
+		return TS.NewType(TS.ARRAY, v.DeclType, nil)
 
 	case *AST.ExpressionArrayAccess:
 		decl := env.get(v.Tok)
-		accessType := decl.DeclType.String()
+		accessType := decl.DeclType
 		for i := 0; i < len(v.Indices); i++ {
-			if accessType[0] != byte('[') {
+			if !accessType.IsArray() {
 				panic(fmt.Sprintf("Line: %d | undefined array access: %s", v.Tok.Line, v.Tok.Lexeme))
 			}
 
-			accessType = accessType[2:]
+			accessType = accessType.RemoveArrayModifier()
 		}
 
-		return AST.CreateDataType(accessType)
+		return accessType
 
 	case *AST.ExpressionLen:
 		if _, ok := v.Array.(*AST.ExpressionArray); ok {
 			panic("Builtin Len() argument is not iterable")
 		}
 
-		return AST.CreateDataType("int")
+		return TS.NewType(TS.INTEGER, nil, nil)
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
 	}
 
-	return AST.DataType{}
+	return TS.NewType(TS.INVALID_TYPE, nil, nil)
 }
 
 func typeCheckStatement(s AST.Statement, env *TypeEnv) {
@@ -210,12 +185,12 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 		}
 
 		_, ok := v.Block.Body[len(v.Block.Body)-1].(*AST.StatementReturn)
-		if !ok && v.ReturnType.String() != "void" {
+		if !ok && v.DeclType.GetReturnType().Kind != TS.VOID {
 			panic(fmt.Sprintf("Missing return type in %s() body", v.Tok.Lexeme))
 		}
 
 		funcEnv := NewTypeEnv(env)
-		for _, param := range v.Parameters {
+		for _, param := range v.DeclType.Parameters {
 			funcEnv.set(param.Tok, &AST.DeclarationVariable{
 				Tok:      param.Tok,
 				DeclType: param.DeclType,
@@ -224,13 +199,13 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 		for _, node := range v.Block.Body {
 			if ret, ok := node.(*AST.StatementReturn); ok {
-				if v.ReturnType.String() == "void" && ret.Expr != nil {
+				if v.DeclType.GetReturnType().Kind == TS.VOID && ret.Expr != nil {
 					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Tok.Lexeme))
 				}
 
 				retType := typeCheckExpression(ret.Expr, funcEnv)
-				if v.ReturnType.String() != retType.String() {
-					panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.ReturnType.String(), retType.String()))
+				if TS.TypeCompare(v.DeclType, retType) {
+					panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
 				}
 
 				continue
