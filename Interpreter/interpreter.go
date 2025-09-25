@@ -171,7 +171,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		return v
 	case *AST.ExpressionIdentifier:
 		return scope.get(v.Tok)
-	case *AST.ExpressionFunctionCall:
+	case *AST.SE_FunctionCall:
 		functionDeclaration := globalFunctions[v.Tok.Lexeme]
 		argCount := len(v.Arguments)
 		paramCount := len(functionDeclaration.DeclType.Parameters)
@@ -395,6 +395,24 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 			}
 		}
 
+	case *AST.SE_FunctionCall:
+		functionDeclaration := globalFunctions[v.Tok.Lexeme]
+		argCount := len(v.Arguments)
+		paramCount := len(functionDeclaration.DeclType.Parameters)
+
+		if paramCount != argCount {
+			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
+		}
+
+		functionScope := CreateScope(&globalScope)
+		for i := 0; i < argCount; i++ {
+			param := functionDeclaration.DeclType.Parameters[i]
+			arg := v.Arguments[i]
+			functionScope.set(param.Tok, interpretExpression(arg, scope))
+		}
+
+		return interpretExpression(interpretNodes(functionDeclaration.Block.Body, &functionScope), &functionScope)
+
 	default:
 		fmt.Printf("Type: %T\n", v)
 		panic("unreachable")
@@ -439,11 +457,12 @@ func InterpretProgram(program AST.Program) {
 	}
 
 	if mainDecl, ok := globalFunctions["main"]; ok {
-		mainCall := &AST.ExpressionFunctionCall{
-			Tok: mainDecl.Tok,
+		mainCall := &AST.SE_FunctionCall{
+			Tok:       mainDecl.Tok,
+			Arguments: nil,
 		}
 
-		interpretExpression(mainCall, &globalScope)
+		interpretStatement(mainCall, &globalScope)
 	} else {
 		panic("main function not found")
 	}

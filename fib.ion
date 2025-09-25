@@ -7,7 +7,7 @@ fn fib(x: int) -> int {
 }
 
 fn main() -> void {
-    defer print(fib(30));
+    defer print(fib(fib(9)) + "\n");
 
     if (true) {
         print("First!\n");

@@ -45,11 +45,6 @@ type ExpressionBinary struct {
 	Right    Expression
 }
 
-type ExpressionFunctionCall struct {
-	Tok       Token.Token
-	Arguments []Expression
-}
-
 type ExpressionArray struct {
 	Elements []Expression
 	DeclType *TS.Type

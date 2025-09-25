@@ -37,13 +37,11 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 
 		return TS.NewType(promotedType, nil, nil)
 
-	case *AST.ExpressionFunctionCall:
-		decl, ok := globalFunctions[v.Tok.Lexeme]
+	case *AST.SE_FunctionCall:
+		functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
 		if !ok {
 			panic("undefined function " + v.Tok.Lexeme)
 		}
-
-		functionDeclaration := globalFunctions[v.Tok.Lexeme]
 		argCount := len(v.Arguments)
 		paramCount := len(functionDeclaration.DeclType.Parameters)
 
@@ -60,7 +58,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			}
 		}
 
-		return decl.DeclType.GetReturnType()
+		return functionDeclaration.DeclType.GetReturnType()
 
 	case *AST.ExpressionArray:
 		for i, element := range v.Elements {
@@ -177,6 +175,28 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 
 	case *AST.StatementDefer:
 		typeCheckNode(v.DeferredNode.(AST.Node), env)
+
+	case *AST.SE_FunctionCall:
+		functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
+		if !ok {
+			panic("undefined function " + v.Tok.Lexeme)
+		}
+
+		argCount := len(v.Arguments)
+		paramCount := len(functionDeclaration.DeclType.Parameters)
+
+		if paramCount != argCount {
+			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
+		}
+
+		for i := 0; i < argCount; i++ {
+			param := functionDeclaration.DeclType.Parameters[i]
+			argType := typeCheckExpression(v.Arguments[i], env)
+
+			if !TS.TypeCompare(param.DeclType, argType) {
+				panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, argType.String(), param.DeclType.String()))
+			}
+		}
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))

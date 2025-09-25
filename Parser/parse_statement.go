@@ -106,6 +106,17 @@ func (parser *Parser) parseStatement() AST.Statement {
 	if current.Kind == Token.LEFT_CURLY {
 		return parser.parseStatementBlock()
 	} else if current.Kind == Token.IDENTIFIER {
+		next := parser.peekNthToken(1)
+		if next.Kind == Token.LEFT_PAREN {
+			ident := parser.expect(Token.IDENTIFIER)
+			arguments := parser.parseArguments()
+			parser.expect(Token.SEMI_COLON)
+			return &AST.SE_FunctionCall{
+				Tok:       ident,
+				Arguments: arguments,
+			}
+		}
+
 		return parser.parseAssignmentStatement()
 	} else if current.Kind == Token.PRINT {
 		return parser.parsePrintStatement()

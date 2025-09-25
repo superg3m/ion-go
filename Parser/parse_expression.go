@@ -65,7 +65,7 @@ func (parser *Parser) parsePrimary() AST.Expression {
 
 		if next.Kind == Token.LEFT_PAREN {
 			arguments := parser.parseArguments()
-			return &AST.ExpressionFunctionCall{
+			return &AST.SE_FunctionCall{
 				Tok:       current,
 				Arguments: arguments,
 			}

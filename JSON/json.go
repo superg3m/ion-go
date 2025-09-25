@@ -61,7 +61,7 @@ func expressionToJson(e AST.Expression) any {
 			"ExpressionGrouping": expressionToJson(v.Expr),
 		}
 
-	case *AST.ExpressionFunctionCall:
+	case *AST.SE_FunctionCall:
 		return map[string]any{
 			"FunctionCall": nil,
 		}

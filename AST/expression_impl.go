@@ -24,10 +24,6 @@ func (*ExpressionUnary) isExpression() {}
 func (*ExpressionBinary) isNode()       {}
 func (*ExpressionBinary) isExpression() {}
 
-func (*ExpressionFunctionCall) isNode()       {}
-func (*ExpressionFunctionCall) isExpression() {}
-func (*ExpressionFunctionCall) isDeferrable() {}
-
 func (*ExpressionArray) isNode()       {}
 func (*ExpressionArray) isExpression() {}
 
