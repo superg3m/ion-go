@@ -1,6 +1,7 @@
 var cool_factor := 7.0;
 
 fn do_something(arr: []float, y: int, z: float) -> float {
+
     var x := 5.4 + y + z;
     x = x * 2;
 
@@ -8,6 +9,7 @@ fn do_something(arr: []float, y: int, z: float) -> float {
         x = x + arr[i];
 
         if (x <= 35) {
+            defer print("AFTER THE CONTINUE!\n");
             print("Hello: " + x + "\n");
             continue;
         }
@@ -27,6 +29,10 @@ fn do_something(arr: []float, y: int, z: float) -> float {
 
 fn main() -> void {
     var arr2 := [][]float.[[1.54, 3.5], [4.2]];
+    print(arr2);
+    print("\n");
+    print(arr2[0]);
+    print("\n");
     print(arr2[0][1] + "\n");
 
     var test := 5.5;
