@@ -1,6 +1,7 @@
 package Parser
 
 import (
+	"fmt"
 	"ion-go/AST"
 	"ion-go/Token"
 )
@@ -148,10 +149,14 @@ func (parser *Parser) parseStatement() AST.Statement {
 		tok := parser.expect(Token.DEFER)
 
 		if decl := parser.parseDeclaration(); decl != nil {
-			panic("Declaration is are not deferrable")
+			panic(fmt.Sprintf("Line %d | Declaration are not deferrable", current.Line))
 		}
 
 		if expr := parser.parseExpression(); expr != nil {
+			if _, ok := expr.(AST.Deferrable); !ok {
+				panic(fmt.Sprintf("Line %d | This Expression is not deferrable", current.Line))
+			}
+
 			return &AST.StatementDefer{
 				Tok:          tok,
 				DeferredNode: expr.(AST.Deferrable),
@@ -159,6 +164,10 @@ func (parser *Parser) parseStatement() AST.Statement {
 		}
 
 		if stmt := parser.parseStatement(); stmt != nil {
+			if _, ok := stmt.(AST.Deferrable); !ok {
+				panic(fmt.Sprintf("Line %d | This Statement is not deferrable", current.Line))
+			}
+
 			return &AST.StatementDefer{
 				Tok:          tok,
 				DeferredNode: stmt.(AST.Deferrable),
