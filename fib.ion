@@ -7,7 +7,12 @@ fn fib(x: int) -> int {
 }
 
 fn main() -> void {
-    defer print(fib(fib(9)) + "\n");
+    defer {
+        defer print(fib(8) + "\n");
+        print("Hello world\n");
+    }
+
+    defer print("THIS IS ACTUALLY BEFORE LAST DEFER!\n");
 
     if (true) {
         print("First!\n");

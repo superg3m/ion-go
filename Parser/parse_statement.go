@@ -147,6 +147,10 @@ func (parser *Parser) parseStatement() AST.Statement {
 	} else if current.Kind == Token.DEFER {
 		tok := parser.expect(Token.DEFER)
 
+		if decl := parser.parseDeclaration(); decl != nil {
+			panic("Declaration is are not deferrable")
+		}
+
 		if expr := parser.parseExpression(); expr != nil {
 			return &AST.StatementDefer{
 				Tok:          tok,
