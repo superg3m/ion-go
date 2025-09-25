@@ -7,5 +7,12 @@ fn fib(x: int) -> int {
 }
 
 fn main() -> void {
-    print(fib(30));
+    defer print(fib(30));
+
+    if (true) {
+        print("First!\n");
+        return;
+    }
+
+    print("NOT HAPPENING\n");
 }

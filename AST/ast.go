@@ -4,6 +4,11 @@ type Node interface {
 	isNode()
 }
 
+type Deferrable interface {
+	Node
+	isDeferrable()
+}
+
 type Program struct {
 	Declarations []Declaration
 }

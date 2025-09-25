@@ -24,6 +24,11 @@ type StatementReturn struct {
 	Expr Expression
 }
 
+type StatementDefer struct {
+	Tok          Token.Token
+	DeferredNode Deferrable
+}
+
 type StatementBreak struct{}
 type StatementContinue struct{}
 

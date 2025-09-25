@@ -133,6 +133,22 @@ func (parser *Parser) parseStatement() AST.Statement {
 		return parser.parseWhileStatement()
 	} else if current.Kind == Token.IF {
 		return parser.parseIfElseStatement()
+	} else if current.Kind == Token.DEFER {
+		tok := parser.expect(Token.DEFER)
+
+		if expr := parser.parseExpression(); expr != nil {
+			return &AST.StatementDefer{
+				Tok:          tok,
+				DeferredNode: expr.(AST.Deferrable),
+			}
+		}
+
+		if stmt := parser.parseStatement(); stmt != nil {
+			return &AST.StatementDefer{
+				Tok:          tok,
+				DeferredNode: stmt.(AST.Deferrable),
+			}
+		}
 	}
 
 	panic("INVALID STATEMENT!")

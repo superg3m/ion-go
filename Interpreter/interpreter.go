@@ -369,6 +369,10 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 			Behavior: AST.RETURN,
 		}
 
+	case *AST.StatementDefer:
+		scope.AddDeferStatement(v)
+		return nil
+
 	case *AST.StatementBreak:
 		return &AST.ExpressionPseudo{
 			Expr:     nil,
@@ -399,17 +403,27 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	return nil
 }
 
-func interpretNodes(nodes []AST.Node, scope *Scope) AST.Expression {
-	for _, node := range nodes {
-		switch v := node.(type) {
-		case AST.Statement:
-			ret := interpretStatement(v, scope)
-			if pseudo, ok := ret.(*AST.ExpressionPseudo); ok {
-				return pseudo
-			}
+func interpretNode(node AST.Node, scope *Scope) AST.Expression {
+	switch v := node.(type) {
+	case AST.Statement:
+		ret := interpretStatement(v, scope)
+		if pseudo, ok := ret.(*AST.ExpressionPseudo); ok {
+			return pseudo
+		}
 
-		case AST.Declaration:
-			interpretDeclaration(v, scope)
+	case AST.Declaration:
+		interpretDeclaration(v, scope)
+	}
+
+	return nil
+}
+
+func interpretNodes(nodes []AST.Node, scope *Scope) AST.Expression {
+	defer scope.ResolveDeferStack()
+	for _, node := range nodes {
+		ret := interpretNode(node, scope)
+		if pseudo, ok := ret.(*AST.ExpressionPseudo); ok {
+			return pseudo
 		}
 	}
 

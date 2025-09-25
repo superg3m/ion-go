@@ -8,6 +8,10 @@ import (
 )
 
 func expressionToJson(e AST.Expression) any {
+	if e == nil {
+		return nil
+	}
+
 	switch v := e.(type) {
 	case *AST.ExpressionInteger:
 		return v.Value
@@ -82,6 +86,11 @@ func statementToJson(s AST.Statement) any {
 	case *AST.StatementReturn:
 		return map[string]any{
 			"ReturnStatement": expressionToJson(v.Expr),
+		}
+
+	case *AST.StatementDefer:
+		return map[string]any{
+			"DeferStatement": nodeToJson(v.DeferredNode),
 		}
 
 	case *AST.StatementContinue:

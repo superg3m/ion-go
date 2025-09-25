@@ -123,7 +123,9 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		typeCheckExpression(v.Expr, env)
 
 	case *AST.StatementReturn:
-		typeCheckExpression(v.Expr, env)
+		if v.Expr != nil {
+			typeCheckExpression(v.Expr, env)
+		}
 
 	case *AST.StatementBreak, *AST.StatementContinue:
 		if env.CurrentStatus != IN_LOOP {
@@ -172,6 +174,9 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 				typeCheckNode(node, env)
 			}
 		}
+
+	case *AST.StatementDefer:
+		typeCheckNode(v.DeferredNode.(AST.Node), env)
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))

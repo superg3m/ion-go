@@ -55,6 +55,7 @@ const (
 	BREAK    = "BREAK"
 	CONTINUE = "CONTINUE"
 	PRINT    = "PRINT"
+	DEFER    = "DEFER"
 
 	// Builtin
 	BUILTIN_LEN = "BUILTIN_LEN"
@@ -83,6 +84,7 @@ func GetKeywordToken(input string) (TokenType, bool) {
 		"break":    BREAK,
 		"continue": CONTINUE,
 		"print":    PRINT,
+		"defer":    DEFER,
 		"true":     BOOLEAN_LITERAL,
 		"false":    BOOLEAN_LITERAL,
 	}

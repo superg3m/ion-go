@@ -3,14 +3,19 @@ package AST
 func (*StatementAssignment) isNode()      {}
 func (*StatementAssignment) isStatement() {}
 
-func (*StatementPrint) isNode()      {}
-func (*StatementPrint) isStatement() {}
+func (*StatementPrint) isNode()       {}
+func (*StatementPrint) isStatement()  {}
+func (*StatementPrint) isDeferrable() {}
 
-func (*StatementBlock) isNode()      {}
-func (*StatementBlock) isStatement() {}
+func (*StatementBlock) isNode()       {}
+func (*StatementBlock) isStatement()  {}
+func (*StatementBlock) isDeferrable() {}
 
 func (*StatementReturn) isNode()      {}
 func (*StatementReturn) isStatement() {}
+
+func (*StatementDefer) isNode()      {}
+func (*StatementDefer) isStatement() {}
 
 func (*StatementBreak) isNode()      {}
 func (*StatementBreak) isStatement() {}

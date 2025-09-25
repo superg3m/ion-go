@@ -16,3 +16,5 @@
     - [] Literals are comp-time
 
 - How do we do type casting
+
+- I want to add a interface Deferable

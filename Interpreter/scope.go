@@ -7,15 +7,29 @@ import (
 )
 
 type Scope struct {
-	parent    *Scope
-	variables map[string]AST.Expression
+	parent     *Scope
+	variables  map[string]AST.Expression
+	deferStack []*AST.StatementDefer
 }
 
 func CreateScope(parent *Scope) Scope {
 	return Scope{
-		parent:    parent,
-		variables: make(map[string]AST.Expression),
+		parent:     parent,
+		variables:  make(map[string]AST.Expression),
+		deferStack: make([]*AST.StatementDefer, 0),
 	}
+}
+
+func (s *Scope) ResolveDeferStack() {
+	for i := len(s.deferStack) - 1; i >= 0; i-- {
+		interpretNode(s.deferStack[i].DeferredNode, s)
+	}
+
+	s.deferStack = nil
+}
+
+func (s *Scope) AddDeferStatement(deferStatement *AST.StatementDefer) {
+	s.deferStack = append(s.deferStack, deferStatement)
 }
 
 func (s *Scope) has(key Token.Token) bool {
