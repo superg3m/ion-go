@@ -309,7 +309,6 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 
 		return nil
 
-		// TODO(Jovanni): I would like tho clean this up its pretty messy
 	case *AST.StatementAssignment:
 		if !scope.has(v.Tok) {
 			panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", v.Tok.Line, v.Tok.Lexeme))
