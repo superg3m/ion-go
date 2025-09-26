@@ -8,7 +8,7 @@ type Statement interface {
 }
 
 type StatementAssignment struct {
-	Tok Token.Token
+	LHS Expression
 	RHS Expression
 }
 

@@ -28,7 +28,7 @@ fn do_something(arr: []float, y: int, z: float) -> float {
 }
 
 fn main() -> void {
-    var arr2 := [][]float.[[1.54, 3.5], [4.2]];
+    var arr2 := [][]float.[[1.54, 5.4], [4.2]];
     print(arr2);
     print("\n");
     print(arr2[0]);

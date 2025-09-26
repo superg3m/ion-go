@@ -308,16 +308,41 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		return nil
 
 	case *AST.StatementAssignment:
-		if !scope.has(v.Tok) {
-			panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", v.Tok.Line, v.Tok.Lexeme))
-		}
+		switch ev := v.LHS.(type) {
+		case *AST.ExpressionIdentifier:
+			if !scope.has(ev.Tok) {
+				panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", ev.Tok.Line, ev.Tok.Lexeme))
+			}
 
-		temp := interpretExpression(v.RHS, scope)
-		if temp == nil {
-			panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", v.Tok.Line, v.Tok.Lexeme))
-		}
+			temp := interpretExpression(v.RHS, scope)
+			if temp == nil {
+				panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", ev.Tok.Line, ev.Tok.Lexeme))
+			}
 
-		scope.set(v.Tok, temp)
+			scope.set(ev.Tok, temp)
+
+		case *AST.ExpressionArrayAccess:
+			if !scope.has(ev.Tok) {
+				panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", ev.Tok.Line, ev.Tok.Lexeme))
+			}
+
+			rhs := interpretExpression(v.RHS, scope)
+			if rhs == nil {
+				panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", ev.Tok.Line, ev.Tok.Lexeme))
+			}
+
+			arr := scope.get(ev.Tok).(*AST.ExpressionArray)
+			for i := 0; i < len(ev.Indices)-1; i++ {
+				index := interpretExpression(ev.Indices[i], scope).(*AST.ExpressionInteger).Value
+				arr = interpretExpression(arr.Elements[index], scope).(*AST.ExpressionArray)
+			}
+
+			index := interpretExpression(ev.Indices[len(ev.Indices)-1], scope).(*AST.ExpressionInteger).Value
+			arr.Elements[index] = rhs
+
+		default:
+			panic("unreachable")
+		}
 
 		return nil
 

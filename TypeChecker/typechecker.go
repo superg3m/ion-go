@@ -110,11 +110,22 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 	switch v := s.(type) {
 	case *AST.StatementAssignment:
-		decl := env.get(v.Tok)
+		lhsType := typeCheckExpression(v.LHS, env)
 		rhsType := typeCheckExpression(v.RHS, env)
 
-		if !TS.TypeCompare(decl.DeclType, rhsType) {
-			panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), decl.DeclType.String()))
+		switch ev := v.LHS.(type) {
+		case *AST.ExpressionIdentifier:
+			if !TS.TypeCompare(lhsType, rhsType) {
+				panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s", ev.Tok.Line, rhsType.String(), lhsType.String()))
+			}
+		case *AST.ExpressionArrayAccess:
+
+			if !TS.TypeCompare(lhsType, rhsType) {
+				panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s", ev.Tok.Line, rhsType.String(), lhsType.String()))
+			}
+
+		default:
+			panic("undefined")
 		}
 
 	case *AST.StatementPrint:

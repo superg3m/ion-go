@@ -38,7 +38,7 @@ func (parser *Parser) parseStatementBlock() AST.Statement {
 }
 
 func (parser *Parser) parseAssignmentStatement() AST.Statement {
-	ident := parser.expect(Token.IDENTIFIER)
+	lhs := parser.parseExpression()
 	parser.expect(Token.EQUALS)
 	rhs := parser.parseExpression()
 	if !parser.ctx.ParsingForIncrement {
@@ -46,7 +46,8 @@ func (parser *Parser) parseAssignmentStatement() AST.Statement {
 	}
 
 	return &AST.StatementAssignment{
-		Tok: ident,
+		//Tok: ,
+		LHS: lhs,
 		RHS: rhs,
 	}
 }

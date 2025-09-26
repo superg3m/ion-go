@@ -78,8 +78,8 @@ func statementToJson(s AST.Statement) any {
 	case *AST.StatementAssignment:
 		return map[string]any{
 			"AssignmentStatement": map[string]any{
-				"name": v.Tok,
-				"rhs":  expressionToJson(v.RHS),
+				"lhs": expressionToJson(v.LHS),
+				"rhs": expressionToJson(v.RHS),
 			},
 		}
 
