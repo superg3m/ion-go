@@ -314,12 +314,12 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 				panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", ev.Tok.Line, ev.Tok.Lexeme))
 			}
 
-			temp := interpretExpression(v.RHS, scope)
-			if temp == nil {
+			rhs := interpretExpression(v.RHS, scope)
+			if rhs == nil {
 				panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", ev.Tok.Line, ev.Tok.Lexeme))
 			}
 
-			scope.set(ev.Tok, temp)
+			scope.set(ev.Tok, rhs)
 
 		case *AST.ExpressionArrayAccess:
 			if !scope.has(ev.Tok) {
