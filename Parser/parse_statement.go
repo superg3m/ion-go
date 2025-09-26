@@ -6,17 +6,6 @@ import (
 	"ion-go/Token"
 )
 
-func (parser *Parser) parsePrintStatement() AST.Statement {
-	parser.expect(Token.PRINT)
-	parser.expect(Token.LEFT_PAREN)
-	expr := parser.parseExpression()
-	parser.expect(Token.RIGHT_PAREN)
-	parser.expect(Token.SEMI_COLON)
-
-	return &AST.StatementPrint{
-		Expr: expr,
-	}
-}
 func (parser *Parser) parseStatementBlock() AST.Statement {
 	var body []AST.Node
 	parser.expect(Token.LEFT_CURLY)
@@ -120,8 +109,17 @@ func (parser *Parser) parseStatement() AST.Statement {
 		}
 
 		return parser.parseAssignmentStatement()
-	} else if current.Kind == Token.PRINT {
-		return parser.parsePrintStatement()
+	} else if current.Kind == Token.PRINT || current.Kind == Token.PRINTLN {
+		parser.expect(current.Kind)
+		parser.expect(Token.LEFT_PAREN)
+		expr := parser.parseExpression()
+		parser.expect(Token.RIGHT_PAREN)
+		parser.expect(Token.SEMI_COLON)
+
+		return &AST.StatementPrint{
+			IsNewLine: current.Kind == Token.PRINTLN,
+			Expr:      expr,
+		}
 	} else if current.Kind == Token.RETURN {
 		parser.expect(Token.RETURN)
 		expr := parser.parseExpression()

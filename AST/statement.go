@@ -13,7 +13,8 @@ type StatementAssignment struct {
 }
 
 type StatementPrint struct {
-	Expr Expression
+	IsNewLine bool
+	Expr      Expression
 }
 
 type StatementBlock struct {

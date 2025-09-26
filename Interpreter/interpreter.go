@@ -9,6 +9,16 @@ import (
 var globalFunctions map[string]*AST.DeclarationFunction
 var globalScope Scope
 
+func evaluateArrayAccessExpression(array *AST.ExpressionArrayAccess, scope *Scope) (*AST.ExpressionArray, int) {
+	ret := scope.get(array.Tok).(*AST.ExpressionArray)
+	for i := 0; i < len(array.Indices)-1; i++ {
+		index := interpretExpression(array.Indices[i], scope).(*AST.ExpressionInteger).Value
+		ret = interpretExpression(ret.Elements[index], scope).(*AST.ExpressionArray)
+	}
+
+	return ret, interpretExpression(array.Indices[len(array.Indices)-1], scope).(*AST.ExpressionInteger).Value
+}
+
 func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression) AST.Expression {
 	switch kind {
 	case Token.PLUS, Token.MINUS, Token.STAR, Token.DIVISION,
@@ -206,19 +216,8 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		return v
 
 	case *AST.ExpressionArrayAccess:
-		var ret AST.Expression
-		arr := scope.get(v.Tok).(*AST.ExpressionArray)
-		for i := 0; i < len(v.Indices); i++ {
-			index := interpretExpression(v.Indices[i], scope).(*AST.ExpressionInteger).Value
-
-			if i < len(v.Indices)-1 {
-				arr = interpretExpression(arr.Elements[index], scope).(*AST.ExpressionArray)
-			} else {
-				ret = interpretExpression(arr.Elements[index], scope)
-			}
-		}
-
-		return ret
+		arr, index := evaluateArrayAccessExpression(v, scope)
+		return arr.Elements[index]
 
 	case *AST.ExpressionPseudo:
 		return interpretExpression(v.Expr, scope)
@@ -304,9 +303,13 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	switch v := s.(type) {
 	case *AST.StatementPrint:
 		printExpression(interpretExpression(v.Expr, scope), scope)
+		if v.IsNewLine {
+			fmt.Println("")
+		}
 
 		return nil
 
+		// TODO(Jovanni): I would like tho clean this up its pretty messy
 	case *AST.StatementAssignment:
 		switch ev := v.LHS.(type) {
 		case *AST.ExpressionIdentifier:
@@ -331,13 +334,7 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 				panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", ev.Tok.Line, ev.Tok.Lexeme))
 			}
 
-			arr := scope.get(ev.Tok).(*AST.ExpressionArray)
-			for i := 0; i < len(ev.Indices)-1; i++ {
-				index := interpretExpression(ev.Indices[i], scope).(*AST.ExpressionInteger).Value
-				arr = interpretExpression(arr.Elements[index], scope).(*AST.ExpressionArray)
-			}
-
-			index := interpretExpression(ev.Indices[len(ev.Indices)-1], scope).(*AST.ExpressionInteger).Value
+			arr, index := evaluateArrayAccessExpression(ev, scope)
 			arr.Elements[index] = rhs
 
 		default:
