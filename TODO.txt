@@ -23,3 +23,7 @@
 
 - Are you comp-time known
     - [] Literals are comp-time
+
+
+I think the wya to bubble up types is to return an array of types that are returned
+from typeCheckNode and do that recursively
