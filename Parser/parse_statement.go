@@ -27,6 +27,7 @@ func (parser *Parser) parseStatementBlock() AST.Statement {
 }
 
 func (parser *Parser) parseAssignmentStatement() AST.Statement {
+	tok := parser.peekNthToken(0)
 	lhs := parser.parseExpression()
 	parser.expect(Token.EQUALS)
 	rhs := parser.parseExpression()
@@ -35,7 +36,7 @@ func (parser *Parser) parseAssignmentStatement() AST.Statement {
 	}
 
 	return &AST.StatementAssignment{
-		//Tok: ,
+		Tok: tok,
 		LHS: lhs,
 		RHS: rhs,
 	}

@@ -311,29 +311,20 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 
 		// TODO(Jovanni): I would like tho clean this up its pretty messy
 	case *AST.StatementAssignment:
+		if !scope.has(v.Tok) {
+			panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", v.Tok.Line, v.Tok.Lexeme))
+		}
+
+		rhs := interpretExpression(v.RHS, scope)
+		if rhs == nil {
+			panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", v.Tok.Line, v.Tok.Lexeme))
+		}
+
 		switch ev := v.LHS.(type) {
 		case *AST.ExpressionIdentifier:
-			if !scope.has(ev.Tok) {
-				panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", ev.Tok.Line, ev.Tok.Lexeme))
-			}
-
-			rhs := interpretExpression(v.RHS, scope)
-			if rhs == nil {
-				panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", ev.Tok.Line, ev.Tok.Lexeme))
-			}
-
 			scope.set(ev.Tok, rhs)
 
 		case *AST.ExpressionArrayAccess:
-			if !scope.has(ev.Tok) {
-				panic(fmt.Sprintf("Line %d | Attempting to assign to undeclared identifier: %s", ev.Tok.Line, ev.Tok.Lexeme))
-			}
-
-			rhs := interpretExpression(v.RHS, scope)
-			if rhs == nil {
-				panic(fmt.Sprintf("Line %d | Attempting to assign void to variable: %s", ev.Tok.Line, ev.Tok.Lexeme))
-			}
-
 			arr, index := evaluateArrayAccessExpression(ev, scope)
 			arr.Elements[index] = rhs
 

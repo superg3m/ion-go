@@ -113,19 +113,8 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		lhsType := typeCheckExpression(v.LHS, env)
 		rhsType := typeCheckExpression(v.RHS, env)
 
-		switch ev := v.LHS.(type) {
-		case *AST.ExpressionIdentifier:
-			if !TS.TypeCompare(lhsType, rhsType) {
-				panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s", ev.Tok.Line, rhsType.String(), lhsType.String()))
-			}
-		case *AST.ExpressionArrayAccess:
-
-			if !TS.TypeCompare(lhsType, rhsType) {
-				panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s", ev.Tok.Line, rhsType.String(), lhsType.String()))
-			}
-
-		default:
-			panic("undefined")
+		if !TS.TypeCompare(lhsType, rhsType) {
+			panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), lhsType.String()))
 		}
 
 	case *AST.StatementPrint:
@@ -237,7 +226,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 		_, ok := v.Block.Body[len(v.Block.Body)-1].(*AST.StatementReturn)
 		if !ok && v.DeclType.GetReturnType().Kind != TS.VOID {
-			panic(fmt.Sprintf("Missing return type in %s() body", v.Tok.Lexeme))
+			panic(fmt.Sprintf("%s() body is missing a return statement or it is not the last statement in the body", v.Tok.Lexeme))
 		}
 
 		funcEnv := NewTypeEnv(env)
