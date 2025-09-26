@@ -1,9 +1,0 @@
-fn type_union_test(a: int|float|string) -> int|float|string {
-    return a - a;
-}
-
-fn main() -> void {
-    println(type_union_test(5));
-    println(type_union_test(5.7));
-    println(type_union_test("wow"));
-}

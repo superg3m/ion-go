@@ -60,7 +60,7 @@ func (parser *Parser) previousToken() Token.Token {
 	return parser.tokens[parser.current-1]
 }
 
-func parseTypeHelper(parser *Parser) *TS.Type {
+func (parser *Parser) parseType() *TS.Type {
 	arrayCount := 0
 	for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {
 		parser.consumeOnMatch(Token.LEFT_BRACKET)
@@ -73,30 +73,13 @@ func parseTypeHelper(parser *Parser) *TS.Type {
 	}
 
 	dataTypeToken := parser.expect(Token.IDENTIFIER)
-	retType := TS.NewType(TS.TypeKind(dataTypeToken.Lexeme), nil, nil, nil)
+	retType := TS.NewType(TS.TypeKind(dataTypeToken.Lexeme), nil, nil)
 
 	for i := 0; i < arrayCount; i++ {
 		retType = retType.AddArrayModifier()
 	}
 
 	return retType
-}
-
-func (parser *Parser) parseType() *TS.Type {
-	ret := parseTypeHelper(parser)
-	if parser.peekNthToken(0).Kind == Token.BITWISE_OR {
-		ret = TS.NewType(TS.TYPE_UNION, nil, nil, []*TS.Type{ret})
-		for parser.consumeOnMatch(Token.BITWISE_OR) {
-			t := parseTypeHelper(parser)
-			if t == nil {
-				break
-			}
-
-			ret.UTypes = append(ret.UTypes, t)
-		}
-	}
-
-	return ret
 }
 
 func ParseProgram(tokens []Token.Token) AST.Program {

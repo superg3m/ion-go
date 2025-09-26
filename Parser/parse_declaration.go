@@ -58,7 +58,7 @@ func (parser *Parser) parseFunctionDeclaration() AST.Declaration {
 	returnType := parser.parseType()
 	block := parser.parseStatementBlock().(*AST.StatementBlock)
 
-	declType := TS.NewType(TS.FUNCTION, returnType, params, nil)
+	declType := TS.NewType(TS.FUNCTION, returnType, params)
 
 	return &AST.DeclarationFunction{
 		Tok:      ident,

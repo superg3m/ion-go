@@ -26,8 +26,6 @@ const (
 	RIGHT_BRACKET = "RIGHT_BRACKET" // "]"
 	LEFT_CURLY    = "LEFT_CURLY"    // "{"
 	RIGHT_CURLY   = "RIGHT_CURLY"   // "}"
-	BITWISE_OR    = "BITWISE_OR"    // "|"
-	BITWISE_AND   = "BITWISE_AND"   // "&"
 
 	// SYNTAX MULTIPLE CHARACTERS
 	EQUALS_EQUALS       = "EQUALS_EQUALS"       // "=="
@@ -131,8 +129,6 @@ func GetSyntaxToken(input string) (TokenType, bool) {
 		"]":  RIGHT_BRACKET,
 		"{":  LEFT_CURLY,
 		"}":  RIGHT_CURLY,
-		"|":  BITWISE_OR,
-		"&":  BITWISE_AND,
 		"==": EQUALS_EQUALS,
 		"!=": NOT_EQUALS,
 		">=": GREATER_THAN_EQUALS,

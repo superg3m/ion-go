@@ -1,14 +1,5 @@
-- [x] Short circuiting
-- [x] Type casting
-- [x] Defer
-
-- [] Set up regression testing
-    - Each test is a directory and it has a test.ion and a solution.ion
-    - Test/<TestName>/test.ion
-    - Test/<TestName>/solution.txt
-
 - Assignment
-    - [x] LHS (needs to be expression)
+    - [] LHS (needs to be expression)
     - [] Member Assignment
 
 - Structs
@@ -23,3 +14,7 @@
 
 - Are you comp-time known
     - [] Literals are comp-time
+
+- How do we do type casting
+
+- Short circuiting

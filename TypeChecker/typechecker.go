@@ -6,64 +6,21 @@ import (
 	"ion-go/TS"
 )
 
-func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
-	_func, ok := globalFunctions[v.Tok.Lexeme]
-	if !ok {
-		panic("undefined function " + v.Tok.Lexeme)
-	}
-
-	var bp_param []TS.Parameter
-	var bp_utypes []*TS.Type
-	blueprint := &AST.DeclarationFunction{
-		Tok: v.Tok,
-		DeclType: TS.NewType(
-			_func.DeclType.Kind,
-			_func.DeclType.Next,
-			append(bp_param, _func.DeclType.Parameters...),
-			append(bp_utypes, _func.DeclType.UTypes...),
-		),
-		Block: _func.Block,
-	}
-
-	argCount := len(v.Arguments)
-	paramCount := len(blueprint.DeclType.Parameters)
-
-	if paramCount != argCount {
-		panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
-	}
-
-	for i := 0; i < argCount; i++ {
-		param := blueprint.DeclType.Parameters[i]
-		argType := typeCheckExpression(v.Arguments[i], env)
-
-		if !TS.TypeCompare(param.DeclType, argType) {
-			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, param.DeclType.String(), argType.String()))
-		}
-
-		blueprint.DeclType.Parameters[i].DeclType = argType
-	}
-	typeCheckDeclaration(blueprint, env)
-
-	// I have to also resolve the return type
-
-	return blueprint.DeclType.GetReturnType()
-}
-
 var globalFunctions map[string]*AST.DeclarationFunction
 
 func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 	switch v := e.(type) {
 	case *AST.ExpressionInteger:
-		return TS.NewType(TS.INTEGER, nil, nil, nil)
+		return TS.NewType(TS.INTEGER, nil, nil)
 
 	case *AST.ExpressionFloat:
-		return TS.NewType(TS.FLOAT, nil, nil, nil)
+		return TS.NewType(TS.FLOAT, nil, nil)
 
 	case *AST.ExpressionBoolean:
-		return TS.NewType(TS.BOOL, nil, nil, nil)
+		return TS.NewType(TS.BOOL, nil, nil)
 
 	case *AST.ExpressionString:
-		return TS.NewType(TS.STRING, nil, nil, nil)
+		return TS.NewType(TS.STRING, nil, nil)
 
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Tok)
@@ -78,10 +35,31 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("Typechecking error Line %d | Operation %s not supported on Left: %s | Right: %s", v.Operator.Line, v.Operator.Lexeme, lt.String(), rt.String()))
 		}
 
-		return TS.NewType(promotedType, nil, nil, nil)
+		return TS.NewType(promotedType, nil, nil)
 
 	case *AST.SE_FunctionCall:
-		return typeCheckFunctionCall(v, env)
+		functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
+		if !ok {
+			panic("undefined function " + v.Tok.Lexeme)
+		}
+
+		argCount := len(v.Arguments)
+		paramCount := len(functionDeclaration.DeclType.Parameters)
+
+		if paramCount != argCount {
+			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
+		}
+
+		for i := 0; i < argCount; i++ {
+			param := functionDeclaration.DeclType.Parameters[i]
+			argType := typeCheckExpression(v.Arguments[i], env)
+
+			if !TS.TypeCompare(param.DeclType, argType) {
+				panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, argType.String(), param.DeclType.String()))
+			}
+		}
+
+		return functionDeclaration.DeclType.GetReturnType()
 
 	case *AST.ExpressionArray:
 		for i, element := range v.Elements {
@@ -123,7 +101,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("Builtin Len() argument is not iterable %T", v.Iterable))
 		}
 
-		return TS.NewType(TS.INTEGER, nil, nil, nil)
+		return TS.NewType(TS.INTEGER, nil, nil)
 
 	case *AST.ExpressionUnary:
 		return typeCheckExpression(v.Operand, env)
@@ -179,7 +157,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		panic(fmt.Sprintf("undefined statement: %T", v))
 	}
 
-	return TS.NewType(TS.INVALID_TYPE, nil, nil, nil)
+	return TS.NewType(TS.INVALID_TYPE, nil, nil)
 }
 
 func typeCheckStatement(s AST.Statement, env *TypeEnv) {
@@ -251,7 +229,26 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		}
 
 	case *AST.SE_FunctionCall:
-		typeCheckFunctionCall(v, env)
+		functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
+		if !ok {
+			panic("undefined function " + v.Tok.Lexeme)
+		}
+
+		argCount := len(v.Arguments)
+		paramCount := len(functionDeclaration.DeclType.Parameters)
+
+		if paramCount != argCount {
+			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
+		}
+
+		for i := 0; i < argCount; i++ {
+			param := functionDeclaration.DeclType.Parameters[i]
+			argType := typeCheckExpression(v.Arguments[i], env)
+
+			if !TS.TypeCompare(param.DeclType, argType) {
+				panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, argType.String(), param.DeclType.String()))
+			}
+		}
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
@@ -275,7 +272,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 	case *AST.DeclarationFunction:
 		if _, ok := globalFunctions[v.Tok.Lexeme]; ok {
-			// panic("Attempting to redeclare function " + v.Tok.Lexeme)
+			panic("Attempting to redeclare function " + v.Tok.Lexeme)
 		} else {
 			globalFunctions[v.Tok.Lexeme] = v
 		}
@@ -291,11 +288,6 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				Tok:      param.Tok,
 				DeclType: param.DeclType,
 			})
-
-			if param.DeclType.Kind == TS.TYPE_UNION {
-				fmt.Printf("%s() has unresolved type unions defering until invokation\n", v.Tok.Lexeme)
-				return
-			}
 		}
 
 		for _, node := range v.Block.Body {
@@ -305,13 +297,10 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				}
 
 				retType := typeCheckExpression(ret.Expr, funcEnv)
-				if !TS.TypeCompare(v.DeclType.GetReturnType(), retType) {
+				if TS.TypeCompare(v.DeclType, retType) {
 					panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
-				} else {
-
 				}
 
-				v.DeclType.Next = retType
 				continue
 			}
 
