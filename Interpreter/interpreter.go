@@ -214,6 +214,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 	case *AST.ExpressionGrouping:
 		return interpretExpression(v.Expr, scope)
+
 	case *AST.ExpressionBinary:
 		leftExpression := interpretExpression(v.Left, scope)
 		if v.Operator.Kind == Token.LOGICAL_OR && leftExpression.(*AST.ExpressionBoolean).Value {
@@ -224,6 +225,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 		rightExpression := interpretExpression(v.Right, scope)
 		return interpretBinaryExpression(v.Operator.Kind, leftExpression, rightExpression)
+
 	case *AST.ExpressionArray:
 		for i, element := range v.Elements {
 			v.Elements[i] = interpretExpression(element, scope)

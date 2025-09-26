@@ -42,6 +42,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		if !ok {
 			panic("undefined function " + v.Tok.Lexeme)
 		}
+
 		argCount := len(v.Arguments)
 		paramCount := len(functionDeclaration.DeclType.Parameters)
 
