@@ -34,6 +34,12 @@ type ExpressionGrouping struct {
 	Expr Expression
 }
 
+type ExpressionTypeCast struct {
+	Tok      Token.Token
+	CastType *TS.Type
+	Expr     Expression
+}
+
 type ExpressionUnary struct {
 	Operator Token.Token
 	Operand  Expression
@@ -51,7 +57,7 @@ type ExpressionArray struct {
 }
 
 type ExpressionLen struct {
-	Array Expression
+	Iterable Expression
 }
 
 type ExpressionArrayAccess struct {

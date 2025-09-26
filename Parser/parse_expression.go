@@ -41,11 +41,11 @@ func (parser *Parser) parsePrimary() AST.Expression {
 		return &AST.ExpressionString{Value: current.Lexeme[1 : len(current.Lexeme)-1]}
 	} else if parser.consumeOnMatch(Token.BUILTIN_LEN) {
 		parser.expect(Token.LEFT_PAREN)
-		arr := parser.parseExpression()
+		iterable := parser.parseExpression()
 		parser.expect(Token.RIGHT_PAREN)
 
 		return &AST.ExpressionLen{
-			Array: arr,
+			Iterable: iterable,
 		}
 	} else if parser.consumeOnMatch(Token.IDENTIFIER) {
 		next := parser.peekNthToken(0)
@@ -75,12 +75,13 @@ func (parser *Parser) parsePrimary() AST.Expression {
 			Tok: current,
 		}
 	} else if parser.consumeOnMatch(Token.LEFT_PAREN) {
-		ret := &AST.ExpressionGrouping{
-			Expr: parser.parseExpression(),
+		expr := parser.parseExpression()
+		if expr != nil {
+			parser.expect(Token.RIGHT_PAREN)
+			return &AST.ExpressionGrouping{
+				Expr: expr,
+			}
 		}
-		parser.expect(Token.RIGHT_PAREN)
-
-		return ret
 	}
 
 	return nil
@@ -207,6 +208,17 @@ func (parser *Parser) parseExpression() AST.Expression {
 
 	if current.Kind == Token.LEFT_BRACKET {
 		return parser.parseArrayExpression()
+	} else if current.Kind == Token.CAST {
+		cast := parser.expect(Token.CAST)
+		parser.expect(Token.LEFT_PAREN)
+		castType := parser.parseType()
+		parser.expect(Token.RIGHT_PAREN)
+
+		return &AST.ExpressionTypeCast{
+			Tok:      cast,
+			CastType: castType,
+			Expr:     parser.parseExpression(),
+		}
 	} else {
 		return parser.parseLogicalExpression()
 	}

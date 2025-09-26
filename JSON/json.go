@@ -48,7 +48,7 @@ func expressionToJson(e AST.Expression) any {
 
 	case *AST.ExpressionLen:
 		return map[string]any{
-			"ExpressionLen": expressionToJson(v.Array),
+			"ExpressionLen": expressionToJson(v.Iterable),
 		}
 
 	case *AST.ExpressionUnary:

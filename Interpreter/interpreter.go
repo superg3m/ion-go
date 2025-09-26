@@ -57,7 +57,7 @@ func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression)
 			case *AST.ExpressionInteger:
 				return evaluateString(kind, lhs.Value, fmt.Sprintf("%d", rhs.Value))
 			case *AST.ExpressionFloat:
-				return evaluateString(kind, lhs.Value, fmt.Sprintf("%f", rhs.Value))
+				return evaluateString(kind, lhs.Value, fmt.Sprintf("%.5g", rhs.Value))
 			case *AST.ExpressionString:
 				return evaluateString(kind, lhs.Value, rhs.Value)
 			}
@@ -68,7 +68,7 @@ func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression)
 			case *AST.ExpressionInteger:
 				return evaluateString(kind, fmt.Sprintf("%d", lhs.Value), rhs.Value)
 			case *AST.ExpressionFloat:
-				return evaluateString(kind, fmt.Sprintf("%f", lhs.Value), rhs.Value)
+				return evaluateString(kind, fmt.Sprintf("%.5g", lhs.Value), rhs.Value)
 			case *AST.ExpressionString:
 				return evaluateString(kind, lhs.Value, rhs.Value)
 			}
@@ -200,12 +200,28 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		return interpretExpression(interpretNodes(functionDeclaration.Block.Body, &functionScope), &functionScope)
 
 	case *AST.ExpressionLen:
-		v.Array = interpretExpression(v.Array, scope)
-		return &AST.ExpressionInteger{Value: len(v.Array.(*AST.ExpressionArray).Elements)}
+		v.Iterable = interpretExpression(v.Iterable, scope)
+		switch ve := v.Iterable.(type) {
+		case *AST.ExpressionArray:
+			return &AST.ExpressionInteger{Value: len(ve.Elements)}
+
+		case *AST.ExpressionString:
+			return &AST.ExpressionInteger{Value: len(ve.Value)}
+
+		default:
+			panic(fmt.Sprintf("unhandled operator: %T", v.Iterable))
+		}
+
 	case *AST.ExpressionGrouping:
 		return interpretExpression(v.Expr, scope)
 	case *AST.ExpressionBinary:
 		leftExpression := interpretExpression(v.Left, scope)
+		if v.Operator.Kind == Token.LOGICAL_OR && leftExpression.(*AST.ExpressionBoolean).Value {
+			return &AST.ExpressionBoolean{Value: true}
+		} else if v.Operator.Kind == Token.LOGICAL_AND && !leftExpression.(*AST.ExpressionBoolean).Value {
+			return &AST.ExpressionBoolean{Value: false}
+		}
+
 		rightExpression := interpretExpression(v.Right, scope)
 		return interpretBinaryExpression(v.Operator.Kind, leftExpression, rightExpression)
 	case *AST.ExpressionArray:
@@ -225,6 +241,9 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 	case *AST.ExpressionUnary:
 		operand := interpretExpression(v.Operand, scope)
 		return interpretUnaryExpression(v.Operator.Kind, operand)
+
+	case *AST.ExpressionTypeCast:
+		return interpretExpression(v.Expr, scope)
 
 	default:
 		fmt.Printf("Type: %T\n", e)
@@ -273,7 +292,7 @@ func printExpression(expr AST.Expression, scope *Scope) {
 		fmt.Print(v.Value)
 
 	case *AST.ExpressionFloat:
-		fmt.Print(v.Value)
+		fmt.Printf("%.5g", v.Value)
 
 	case *AST.ExpressionBoolean:
 		fmt.Print(v.Value)

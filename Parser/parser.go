@@ -67,8 +67,12 @@ func (parser *Parser) parseType() *TS.Type {
 		parser.consumeOnMatch(Token.RIGHT_BRACKET)
 		arrayCount += 1
 	}
-	dataTypeToken := parser.expect(Token.IDENTIFIER)
 
+	if parser.peekNthToken(0).Kind != Token.IDENTIFIER {
+		return nil
+	}
+
+	dataTypeToken := parser.expect(Token.IDENTIFIER)
 	retType := TS.NewType(TS.TypeKind(dataTypeToken.Lexeme), nil, nil)
 
 	for i := 0; i < arrayCount; i++ {

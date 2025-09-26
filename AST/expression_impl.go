@@ -18,6 +18,9 @@ func (*ExpressionIdentifier) isExpression() {}
 func (*ExpressionGrouping) isNode()       {}
 func (*ExpressionGrouping) isExpression() {}
 
+func (*ExpressionTypeCast) isNode()       {}
+func (*ExpressionTypeCast) isExpression() {}
+
 func (*ExpressionUnary) isNode()       {}
 func (*ExpressionUnary) isExpression() {}
 

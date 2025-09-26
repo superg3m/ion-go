@@ -88,8 +88,16 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		return accessType
 
 	case *AST.ExpressionLen:
-		if _, ok := v.Array.(*AST.ExpressionArray); ok {
-			panic("Builtin Len() argument is not iterable")
+		switch ev := v.Iterable.(type) {
+		case *AST.ExpressionArray:
+		case *AST.ExpressionString:
+		case *AST.ExpressionIdentifier:
+			evType := env.get(ev.Tok)
+			if evType.DeclType.Kind != TS.ARRAY && evType.DeclType.Kind != TS.STRING {
+				panic(fmt.Sprintf("Builtin Len() argument is not iterable"))
+			}
+		default:
+			panic(fmt.Sprintf("Builtin Len() argument is not iterable %T", v.Iterable))
 		}
 
 		return TS.NewType(TS.INTEGER, nil, nil)
@@ -98,6 +106,50 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		return typeCheckExpression(v.Operand, env)
 
 	case *AST.ExpressionGrouping:
+		return typeCheckExpression(v.Expr, env)
+
+	case *AST.ExpressionTypeCast:
+		// Later I should make sure that you can actually do this cast
+		exprType := typeCheckExpression(v.Expr, env)
+		if TS.TypeCompare(v.CastType, exprType) {
+			return v.CastType
+		}
+
+		if !TS.CanCastType(v.CastType, exprType) {
+			panic(fmt.Sprintf("Typechecking error Line %d | Invalid cast to %s from %s", v.Tok.Line, v.CastType.String(), exprType.String()))
+		}
+
+		switch ev := v.Expr.(type) {
+		case *AST.ExpressionInteger:
+			if v.CastType.Kind == TS.STRING {
+				v.Expr = &AST.ExpressionString{
+					Value: fmt.Sprintf("%d", ev.Value),
+				}
+			}
+
+			if v.CastType.Kind == TS.FLOAT {
+				v.Expr = &AST.ExpressionFloat{
+					Value: float32(ev.Value),
+				}
+			}
+
+		case *AST.ExpressionFloat:
+			if v.CastType.Kind == TS.STRING {
+				v.Expr = &AST.ExpressionString{
+					Value: fmt.Sprintf("%.5g", ev.Value),
+				}
+			}
+
+			if v.CastType.Kind == TS.INTEGER {
+				v.Expr = &AST.ExpressionInteger{
+					Value: int(ev.Value),
+				}
+			}
+
+		default:
+			panic("undefined expression")
+		}
+
 		return typeCheckExpression(v.Expr, env)
 
 	default:
@@ -214,7 +266,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 		env.set(v.Tok, v)
 
 		if !TS.TypeCompare(v.DeclType, rhsType) {
-			panic(fmt.Sprintf("Line: %d |  Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), v.DeclType.String()))
+			panic(fmt.Sprintf("Line: %d | Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), v.DeclType.String()))
 		}
 
 	case *AST.DeclarationFunction:

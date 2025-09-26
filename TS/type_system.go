@@ -228,22 +228,32 @@ func GetPromotedType(op Token.Token, leftType, rightType *Type) TypeKind {
 	return INVALID_TYPE
 }
 
-// Axioms
-// - For example an integer expression is of type integer
-
-// Cast TYpe
-
-/*
-func (t *Type) CanCastType(newType *Type) bool {
-
+type TypeCastQuery struct {
+	TypeCast TypeKind
+	ExprType TypeKind
 }
 
-func (t *Type) CastType(newType *Type) TypeKind {
+func CanCastType(castType *Type, exprType *Type) bool {
+	// Trivial case
+	if TypeCompare(castType, exprType) {
+		return true
+	}
 
-}
+	var castMap = map[TypeCastQuery]bool{
+		{INTEGER, FLOAT}:  true,
+		{FLOAT, INTEGER}:  true,
+		{STRING, INTEGER}: true,
+		{STRING, FLOAT}:   true,
+	}
 
-BinaryOps {
-	{"+", "int", "int"}
-	{"+", "int", "int"}
+	query := TypeCastQuery{
+		TypeCast: castType.Kind,
+		ExprType: exprType.Kind,
+	}
+
+	if _, ok := castMap[query]; ok {
+		return true
+	}
+
+	return false
 }
-*/
