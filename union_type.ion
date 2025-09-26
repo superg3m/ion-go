@@ -1,9 +1,27 @@
-fn type_union_test(a: int|float|string) -> int|float|string {
-    return a - a;
+fn sum(arr: []int|[]float) -> int|float {
+    var accumulator := arr[0];
+    for (var i := 1; i < len(arr); i = i + 1) {
+        accumulator = accumulator + arr[i];
+    }
+
+    return accumulator;
+}
+
+fn weird(x: int|float) -> float|int {
+    if (x < 5) {
+        return 5;
+    }
+
+    return 73.3;
 }
 
 fn main() -> void {
-    println(type_union_test(5));
-    println(type_union_test(5.7));
-    println(type_union_test("wow"));
+    var arr := []float.[1.5, 2.5];
+    var arr2 := []int.[1, 2, 3];
+
+    println(sum(arr));
+    println(sum(arr2));
+
+    println(weird(6));
+    println(weird(1));
 }

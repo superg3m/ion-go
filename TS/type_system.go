@@ -113,6 +113,10 @@ func (t *Type) RemoveArrayModifier() *Type {
 
 func (t *Type) String() string {
 	ret := ""
+	if t == nil {
+		return "<nil>"
+	}
+
 	if t.Kind == TYPE_UNION {
 		for i, tu := range t.UTypes {
 			ret += tu.String()

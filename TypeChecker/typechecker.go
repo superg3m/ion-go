@@ -6,6 +6,8 @@ import (
 	"ion-go/TS"
 )
 
+var globalEnv *TypeEnv
+
 func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 	_func, ok := globalFunctions[v.Tok.Lexeme]
 	if !ok {
@@ -32,8 +34,13 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 		panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
 	}
 
+	hasUnresolvedParam := false
 	for i := 0; i < argCount; i++ {
 		param := blueprint.DeclType.Parameters[i]
+		if param.DeclType.Kind == TS.TYPE_UNION {
+			hasUnresolvedParam = true
+		}
+
 		argType := typeCheckExpression(v.Arguments[i], env)
 
 		if !TS.TypeCompare(param.DeclType, argType) {
@@ -42,9 +49,24 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 
 		blueprint.DeclType.Parameters[i].DeclType = argType
 	}
-	typeCheckDeclaration(blueprint, env)
 
-	// I have to also resolve the return type
+	if hasUnresolvedParam && globalEnv.CurrentStatus != RESOLVING_FUNCTION_BLUEPRINT {
+		// I mean we are truly in hell right here
+		var indicesThatInferTypes []int
+		for i, node := range blueprint.Block.Body {
+			if _, ok = node.(*AST.DeclarationVariable); ok {
+				indicesThatInferTypes = append(indicesThatInferTypes, i)
+			}
+		}
+
+		cachedStatus := globalEnv.CurrentStatus
+		globalEnv.CurrentStatus = RESOLVING_FUNCTION_BLUEPRINT
+		typeCheckDeclaration(blueprint, globalEnv)
+		globalEnv.CurrentStatus = cachedStatus
+		for _, i := range indicesThatInferTypes {
+			blueprint.Block.Body[i].(*AST.DeclarationVariable).DeclType = nil
+		}
+	}
 
 	return blueprint.DeclType.GetReturnType()
 }
@@ -274,9 +296,9 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 		}
 
 	case *AST.DeclarationFunction:
-		if _, ok := globalFunctions[v.Tok.Lexeme]; ok {
-			// panic("Attempting to redeclare function " + v.Tok.Lexeme)
-		} else {
+		if _, ok := globalFunctions[v.Tok.Lexeme]; ok && env.CurrentStatus != RESOLVING_FUNCTION_BLUEPRINT {
+			panic("Attempting to redeclare function " + v.Tok.Lexeme)
+		} else if env.CurrentStatus != RESOLVING_FUNCTION_BLUEPRINT {
 			globalFunctions[v.Tok.Lexeme] = v
 		}
 
@@ -285,7 +307,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 			panic(fmt.Sprintf("%s() body is missing a return statement or it is not the last statement in the body", v.Tok.Lexeme))
 		}
 
-		funcEnv := NewTypeEnv(env)
+		funcEnv := NewTypeEnv(globalEnv)
 		for _, param := range v.DeclType.Parameters {
 			funcEnv.set(param.Tok, &AST.DeclarationVariable{
 				Tok:      param.Tok,
@@ -293,25 +315,63 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 			})
 
 			if param.DeclType.Kind == TS.TYPE_UNION {
-				fmt.Printf("%s() has unresolved type unions defering until invokation\n", v.Tok.Lexeme)
+				fmt.Printf("%s() has unresolved type unions defering until invocation\n", v.Tok.Lexeme)
 				return
 			}
 		}
 
+		// TODO(JOVANNI): Perform and exorcism on this code later
+		// This is just stupid because i should have some way to bubble up
+		// return types like I do in the interpreter
 		for _, node := range v.Block.Body {
+			if ifElseNode, ok := node.(*AST.StatementIfElse); ok {
+				for _, b2 := range ifElseNode.IfBlock.Body {
+					if ret, ok := b2.(*AST.StatementReturn); ok {
+						if ret.Expr != nil {
+							retType := typeCheckExpression(ret.Expr, funcEnv)
+							if !TS.TypeCompare(v.DeclType.GetReturnType(), retType) {
+								panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
+							}
+						}
+
+						continue
+					}
+
+					typeCheckNode(b2, funcEnv)
+				}
+
+				if ifElseNode.ElseBlock != nil {
+					for _, n2 := range ifElseNode.ElseBlock.Body {
+						if ret, ok := n2.(*AST.StatementReturn); ok {
+							if ret.Expr != nil {
+								retType := typeCheckExpression(ret.Expr, funcEnv)
+								if !TS.TypeCompare(v.DeclType.GetReturnType(), retType) {
+									panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
+								}
+							}
+
+							continue
+						}
+
+						typeCheckNode(n2, funcEnv)
+					}
+				}
+
+				continue
+			}
+
 			if ret, ok := node.(*AST.StatementReturn); ok {
 				if v.DeclType.GetReturnType().Kind == TS.VOID && ret.Expr != nil {
 					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Tok.Lexeme))
 				}
 
-				retType := typeCheckExpression(ret.Expr, funcEnv)
-				if !TS.TypeCompare(v.DeclType.GetReturnType(), retType) {
-					panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
-				} else {
-
+				if ret.Expr != nil {
+					retType := typeCheckExpression(ret.Expr, funcEnv)
+					if !TS.TypeCompare(v.DeclType.GetReturnType(), retType) {
+						panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
+					}
 				}
 
-				v.DeclType.Next = retType
 				continue
 			}
 
@@ -332,7 +392,7 @@ func typeCheckNode(node AST.Node, env *TypeEnv) {
 }
 
 func TypeCheckProgram(program AST.Program) {
-	globalEnv := NewTypeEnv(nil)
+	globalEnv = NewTypeEnv(nil)
 	globalFunctions = make(map[string]*AST.DeclarationFunction)
 
 	for _, decl := range program.Declarations {

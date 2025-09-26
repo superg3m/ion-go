@@ -11,6 +11,7 @@ type Status int
 const (
 	NORMAL Status = iota
 	IN_LOOP
+	RESOLVING_FUNCTION_BLUEPRINT
 )
 
 type TypeEnv struct {
