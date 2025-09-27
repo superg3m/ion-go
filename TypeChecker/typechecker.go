@@ -290,6 +290,8 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 			})
 		}
 
+		// TODO(JOVANNI):
+		// Make sure you check the other type of statements for bubble up returns
 		for _, node := range v.Block.Body {
 			if ret, ok := node.(*AST.StatementReturn); ok {
 				if v.DeclType.GetReturnType().Kind == TS.VOID && ret.Expr != nil {
