@@ -2,9 +2,12 @@ fn main() -> void {
     var a := [][]int.[[1, 2, 3, 4], [75, 32]];
     println(a[0]);
     println(a[1]);
+
     a[1] = []int.[53, 64];
     a[1][0] = 0;
+
     println(a[1]);
+
     a = [][]int.[[5, 4, 3, 2], [1, 10]];
     println(a);
 }

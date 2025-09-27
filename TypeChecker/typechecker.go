@@ -148,7 +148,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			}
 
 		default:
-			panic("undefined expression")
+			panic(fmt.Sprintf("undefined expression %T", v.Expr))
 		}
 
 		return typeCheckExpression(v.Expr, env)

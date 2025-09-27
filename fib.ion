@@ -14,7 +14,7 @@ fn main() -> void {
 
     defer print("THIS IS ACTUALLY BEFORE LAST DEFER!\n");
 
-    if (true || fib(10) > 4) {
+    if (false || fib(100) > 4) {
         print("First!\n");
         return;
     }
