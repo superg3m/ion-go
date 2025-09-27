@@ -53,6 +53,10 @@ func (lexer *Lexer) reportError(format string, args ...interface{}) {
 func (lexer *Lexer) consumeNextChar() {
 	lexer.c = lexer.source[lexer.rightPos]
 	lexer.rightPos += 1
+
+	if lexer.c == '\n' {
+		lexer.line++
+	}
 }
 
 func (lexer *Lexer) peekNthChar(n int) byte {
@@ -65,18 +69,6 @@ func (lexer *Lexer) peekNthChar(n int) byte {
 
 func isWhitespace(c byte) bool {
 	return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == 0
-}
-
-func (lexer *Lexer) consumeWhitespace() bool {
-	if !isWhitespace(lexer.c) {
-		return false
-	}
-
-	if lexer.c == '\n' {
-		lexer.line += 1
-	}
-
-	return true
 }
 
 func (lexer *Lexer) consumeWord() bool {
@@ -99,7 +91,7 @@ func (lexer *Lexer) consumeNextToken() {
 	lexer.leftPos = lexer.rightPos
 	lexer.consumeNextChar()
 
-	if lexer.consumeWhitespace() {
+	if isWhitespace(lexer.c) {
 	} else if lexer.consumeLiteral() {
 	} else if lexer.consumeIdentifier() {
 	} else if lexer.consumeSyntax() {
