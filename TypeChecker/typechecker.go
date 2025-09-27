@@ -7,6 +7,7 @@ import (
 )
 
 var globalFunctions map[string]*AST.DeclarationFunction
+var globalReturnStack []*TS.Type
 
 func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 	functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
@@ -126,38 +127,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("Typechecking error Line %d | Invalid cast to %s from %s", v.Tok.Line, v.CastType.String(), exprType.String()))
 		}
 
-		switch ev := v.Expr.(type) {
-		case *AST.ExpressionInteger:
-			if v.CastType.Kind == TS.STRING {
-				v.Expr = &AST.ExpressionString{
-					Value: fmt.Sprintf("%d", ev.Value),
-				}
-			}
-
-			if v.CastType.Kind == TS.FLOAT {
-				v.Expr = &AST.ExpressionFloat{
-					Value: float32(ev.Value),
-				}
-			}
-
-		case *AST.ExpressionFloat:
-			if v.CastType.Kind == TS.STRING {
-				v.Expr = &AST.ExpressionString{
-					Value: fmt.Sprintf("%.5g", ev.Value),
-				}
-			}
-
-			if v.CastType.Kind == TS.INTEGER {
-				v.Expr = &AST.ExpressionInteger{
-					Value: int(ev.Value),
-				}
-			}
-
-		default:
-			panic(fmt.Sprintf("undefined expression %T", v.Expr))
-		}
-
-		return typeCheckExpression(v.Expr, env)
+		return v.CastType
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
