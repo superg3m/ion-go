@@ -11,17 +11,31 @@ type StatementTypePair struct {
 	t    *TS.Type
 }
 
+var globalEnv *TypeEnv
 var globalFunctions map[string]*AST.DeclarationFunction
 var globalReturnStatementStack []StatementTypePair
 
 func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
-	functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
+	_func, ok := globalFunctions[v.Tok.Lexeme]
 	if !ok {
 		panic("undefined function " + v.Tok.Lexeme)
 	}
 
+	var bp_param []TS.Parameter
+	var bp_utypes []*TS.Type
+	blueprint := &AST.DeclarationFunction{
+		Tok: v.Tok,
+		DeclType: TS.NewType(
+			_func.DeclType.Kind,
+			_func.DeclType.Next,
+			append(bp_param, _func.DeclType.Parameters...),
+			append(bp_utypes, _func.DeclType.UTypes...),
+		),
+		Block: _func.Block,
+	}
+
 	argCount := len(v.Arguments)
-	paramCount := len(functionDeclaration.DeclType.Parameters)
+	paramCount := len(blueprint.DeclType.Parameters)
 
 	if paramCount != argCount {
 		panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
@@ -37,8 +51,10 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 		argType := typeCheckExpression(v.Arguments[i], env)
 
 		if !TS.TypeCompare(param.DeclType, argType) {
-			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, argType.String(), param.DeclType.String()))
+			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, param.DeclType.String(), argType.String()))
 		}
+
+		blueprint.DeclType.Parameters[i].DeclType = argType
 	}
 
 	if hasUnresolvedParam && globalEnv.CurrentStatus != RESOLVING_FUNCTION_BLUEPRINT {
@@ -65,16 +81,16 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 	switch v := e.(type) {
 	case *AST.ExpressionInteger:
-		return TS.NewType(TS.INTEGER, nil, nil)
+		return TS.NewType(TS.INTEGER, nil, nil, nil)
 
 	case *AST.ExpressionFloat:
-		return TS.NewType(TS.FLOAT, nil, nil)
+		return TS.NewType(TS.FLOAT, nil, nil, nil)
 
 	case *AST.ExpressionBoolean:
-		return TS.NewType(TS.BOOL, nil, nil)
+		return TS.NewType(TS.BOOL, nil, nil, nil)
 
 	case *AST.ExpressionString:
-		return TS.NewType(TS.STRING, nil, nil)
+		return TS.NewType(TS.STRING, nil, nil, nil)
 
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Tok)
@@ -89,7 +105,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("Typechecking error Line %d | Operation %s not supported on Left: %s | Right: %s", v.Operator.Line, v.Operator.Lexeme, lt.String(), rt.String()))
 		}
 
-		return TS.NewType(promotedType, nil, nil)
+		return TS.NewType(promotedType, nil, nil, nil)
 
 	case *AST.SE_FunctionCall:
 		return typeCheckFunctionCall(v, env)
@@ -134,7 +150,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("Builtin Len() argument is not iterable %T", v.Iterable))
 		}
 
-		return TS.NewType(TS.INTEGER, nil, nil)
+		return TS.NewType(TS.INTEGER, nil, nil, nil)
 
 	case *AST.ExpressionUnary:
 		return typeCheckExpression(v.Operand, env)
@@ -158,7 +174,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		panic(fmt.Sprintf("undefined statement: %T", v))
 	}
 
-	return TS.NewType(TS.INVALID_TYPE, nil, nil)
+	return TS.NewType(TS.INVALID_TYPE, nil, nil, nil)
 }
 
 func typeCheckStatement(s AST.Statement, env *TypeEnv) {
@@ -275,8 +291,16 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				Tok:      param.Tok,
 				DeclType: param.DeclType,
 			})
+
+			if param.DeclType.Kind == TS.TYPE_UNION {
+				fmt.Printf("%s() has unresolved type unions defering until invocation\n", v.Tok.Lexeme)
+				return
+			}
 		}
 
+		// TODO(JOVANNI): Perform and exorcism on this code later
+		// This is just stupid because i should have some way to bubble up
+		// return types like I do in the interpreter
 		for _, node := range v.Block.Body {
 			typeCheckNode(node, funcEnv)
 			for _, pair := range globalReturnStatementStack {

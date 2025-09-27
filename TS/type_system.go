@@ -16,6 +16,7 @@ const (
 	ARRAY                 = "[]"
 	POINTER               = "*"
 	FUNCTION              = "fn(...) -> "
+	TYPE_UNION            = "TYPE_UNION"
 )
 
 type Parameter struct {
@@ -25,19 +26,25 @@ type Parameter struct {
 
 type Type struct {
 	Kind       TypeKind
-	Next       *Type // For Functions the return type is the last node in the next chain
-	Parameters []Parameter
+	Next       *Type       // For Functions the return type is the last node in the next chain
+	Parameters []Parameter // for functions
+	UTypes     []*Type     // for type unions
 }
 
-func NewType(kind TypeKind, next *Type, parameters []Parameter) *Type {
+func NewType(kind TypeKind, next *Type, parameters []Parameter, utypes []*Type) *Type {
 	if kind != FUNCTION && parameters != nil {
 		panic("Attempted to give parameters to a non function type")
+	}
+
+	if kind != TYPE_UNION && utypes != nil {
+		panic("Attempted to give utypes to to a non type union")
 	}
 
 	return &Type{
 		Kind:       kind,
 		Next:       next,
 		Parameters: parameters,
+		UTypes:     utypes,
 	}
 }
 
@@ -82,11 +89,11 @@ func (t *Type) SetBaseType(kind TypeKind) {
 		current = current.Next
 	}
 
-	current.Next = NewType(kind, nil, nil)
+	current.Next = NewType(kind, nil, nil, nil)
 }
 
 func (t *Type) AddArrayModifier() *Type {
-	current := NewType(ARRAY, t, nil)
+	current := NewType(ARRAY, t, nil, nil)
 
 	return current
 }
@@ -96,7 +103,7 @@ func (t *Type) RemoveArrayModifier() *Type {
 		panic("Expected ARRAY type")
 	}
 
-	current := NewType(t.Kind, t.Next, t.Parameters)
+	current := NewType(t.Kind, t.Next, t.Parameters, t.UTypes)
 
 	current.Kind = current.Next.Kind
 	current.Next = current.Next.Next
@@ -133,8 +140,23 @@ func (t *Type) String() string {
 // TypeCompare NOTE(Jovanni):
 // Later on this might have like subtype and type group implications so it probably
 // won't just be a bool it will be some type of int 0 is exact type 1 is super type, -1 is not equal
-func TypeCompare(leftType, rightType *Type) bool {
-	c1, c2 := leftType, rightType
+// NOTE(Jovanni): It should be impossible for both the c1 and c2 types to both be type unions
+func TypeCompare(c1, c2 *Type) bool {
+	if c1.Kind == TYPE_UNION {
+		for _, t := range c1.UTypes {
+			if TypeCompare(t, c2) {
+				return true
+			}
+		}
+	}
+
+	if c2.Kind == TYPE_UNION {
+		for _, t := range c2.UTypes {
+			if TypeCompare(c1, t) {
+				return true
+			}
+		}
+	}
 
 	for c1 != nil && c2 != nil {
 		if c1.Kind != c2.Kind {

@@ -9,7 +9,7 @@ fn sum(arr: []int|[]float) -> int|float {
 
 fn weird(x: int|float) -> float|int {
     if (x < 5) {
-        return 5;
+        return x;
     }
 
     return 73.3;
