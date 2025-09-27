@@ -26,16 +26,16 @@ fn do_something(arr: []float, y: int, z: float) -> float {
 
 fn main() -> void {
     var arr2 := [][]float.[[1.54, 5.4], [4.2]];
-    println(arr2);
-    println(arr2[0]);
-    println(arr2[0][1]);
+    for (var i := len(arr2) - 1; i >= 0; i = i - 1) {
+        println(arr2[i]);
+    }
 
     var test := -(5.5);
     var arr := []float.[1.5, test];
-    var kldfjdskljf: float = 64 + do_something(arr, 6, cast(float)5.0);
+    print(arr);
 
+    var kldfjdskljf: float = 64 + do_something(arr, 6, cast(float)5.0);
     println(kldfjdskljf);
-    println(arr);
 
     var x := cast(string)5.3 + 5;
     println(x);
