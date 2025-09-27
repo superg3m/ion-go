@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	tokenStream := Lexer.GenerateTokenStream("./type_checking_stress_test.ion")
+	tokenStream := Lexer.GenerateTokenStream("./test.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./test.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./factorial.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./fib.ion")
