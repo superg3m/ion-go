@@ -122,11 +122,12 @@ func (parser *Parser) parseStatement() AST.Statement {
 			Expr:      expr,
 		}
 	} else if current.Kind == Token.RETURN {
-		parser.expect(Token.RETURN)
+		tok := parser.expect(Token.RETURN)
 		expr := parser.parseExpression()
 		parser.expect(Token.SEMI_COLON)
 
 		return &AST.StatementReturn{
+			Tok:  tok,
 			Expr: expr,
 		}
 	} else if current.Kind == Token.BREAK {

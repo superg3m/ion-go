@@ -10,7 +10,12 @@ import (
 )
 
 func main() {
-	tokenStream := Lexer.GenerateTokenStream("./union_type.ion")
+	tokenStream := Lexer.GenerateTokenStream("./test.ion")
+	// tokenStream := Lexer.GenerateTokenStream("./test.ion")
+	// tokenStream := Lexer.GenerateTokenStream("./factorial.ion")
+	// tokenStream := Lexer.GenerateTokenStream("./fib.ion")
+	// tokenStream := Lexer.GenerateTokenStream("./array.ion")
+
 	for i := 0; i < len(tokenStream); i++ {
 		token := tokenStream[i]
 		tokenType, tokenValue := token.Kind, token.Lexeme

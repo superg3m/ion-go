@@ -1,9 +1,0 @@
-fn poly_test(a: $T) -> void {
-    println(a);
-}
-
-fn main() -> void {
-    poly_test(5);
-    poly_test(5.7);
-    poly_test("Well well well");
-}

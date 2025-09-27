@@ -1,0 +1,11 @@
+fn do_something(x: string) -> string {
+    if (true) {
+        return 5;
+    }
+
+    return "";
+}
+
+fn main() -> void {
+    do_something("");
+}

@@ -3,6 +3,7 @@ package Interpreter
 import (
 	"fmt"
 	"ion-go/AST"
+	"ion-go/TS"
 	"ion-go/Token"
 )
 
@@ -245,7 +246,39 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		return interpretUnaryExpression(v.Operator.Kind, operand)
 
 	case *AST.ExpressionTypeCast:
-		return interpretExpression(v.Expr, scope)
+		v.Expr = interpretExpression(v.Expr, scope)
+		switch ev := v.Expr.(type) {
+		case *AST.ExpressionInteger:
+			if v.CastType.Kind == TS.STRING {
+				v.Expr = &AST.ExpressionString{
+					Value: fmt.Sprintf("%d", ev.Value),
+				}
+			}
+
+			if v.CastType.Kind == TS.FLOAT {
+				v.Expr = &AST.ExpressionFloat{
+					Value: float32(ev.Value),
+				}
+			}
+
+		case *AST.ExpressionFloat:
+			if v.CastType.Kind == TS.STRING {
+				v.Expr = &AST.ExpressionString{
+					Value: fmt.Sprintf("%.5g", ev.Value),
+				}
+			}
+
+			if v.CastType.Kind == TS.INTEGER {
+				v.Expr = &AST.ExpressionInteger{
+					Value: int(ev.Value),
+				}
+			}
+
+		default:
+			panic(fmt.Sprintf("undefined expression %T", v.Expr))
+		}
+
+		return v.Expr
 
 	default:
 		fmt.Printf("Type: %T\n", e)

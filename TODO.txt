@@ -1,13 +1,9 @@
-- [x] Short circuiting
 - [x] Type casting
+- [x] Short circuiting
 - [x] Defer
+- [x] Arrays
 
-- [] Set up regression testing
-    - Each test is a directory and it has a test.ion and a solution.ion
-    - Test/<TestName>/test.ion
-    - Test/<TestName>/solution.txt
-
-- Assignment
+- [] Assignment
     - [x] LHS (needs to be expression)
     - [] Member Assignment
 
@@ -15,15 +11,9 @@
     - [] Member
     - [] Union
 
-- Pointer
-
 - Errors
     - Should give you file and line
     - Tokens should probably just store the filename even tho that seems so wasteful...
 
 - Are you comp-time known
     - [] Literals are comp-time
-
-
-I think the wya to bubble up types is to return an array of types that are returned
-from typeCheckNode and do that recursively

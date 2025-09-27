@@ -23,6 +23,7 @@ type StatementBlock struct {
 }
 
 type StatementReturn struct {
+	Tok  Token.Token
 	Expr Expression
 }
 

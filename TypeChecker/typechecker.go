@@ -6,29 +6,22 @@ import (
 	"ion-go/TS"
 )
 
-var globalEnv *TypeEnv
+type StatementTypePair struct {
+	stmt *AST.StatementReturn
+	t    *TS.Type
+}
+
+var globalFunctions map[string]*AST.DeclarationFunction
+var globalReturnStatementStack []StatementTypePair
 
 func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
-	_func, ok := globalFunctions[v.Tok.Lexeme]
+	functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
 	if !ok {
 		panic("undefined function " + v.Tok.Lexeme)
 	}
 
-	var bp_param []TS.Parameter
-	var bp_utypes []*TS.Type
-	blueprint := &AST.DeclarationFunction{
-		Tok: v.Tok,
-		DeclType: TS.NewType(
-			_func.DeclType.Kind,
-			_func.DeclType.Next,
-			append(bp_param, _func.DeclType.Parameters...),
-			append(bp_utypes, _func.DeclType.UTypes...),
-		),
-		Block: _func.Block,
-	}
-
 	argCount := len(v.Arguments)
-	paramCount := len(blueprint.DeclType.Parameters)
+	paramCount := len(functionDeclaration.DeclType.Parameters)
 
 	if paramCount != argCount {
 		panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
@@ -44,10 +37,8 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 		argType := typeCheckExpression(v.Arguments[i], env)
 
 		if !TS.TypeCompare(param.DeclType, argType) {
-			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, param.DeclType.String(), argType.String()))
+			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, argType.String(), param.DeclType.String()))
 		}
-
-		blueprint.DeclType.Parameters[i].DeclType = argType
 	}
 
 	if hasUnresolvedParam && globalEnv.CurrentStatus != RESOLVING_FUNCTION_BLUEPRINT {
@@ -71,21 +62,19 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 	return blueprint.DeclType.GetReturnType()
 }
 
-var globalFunctions map[string]*AST.DeclarationFunction
-
 func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 	switch v := e.(type) {
 	case *AST.ExpressionInteger:
-		return TS.NewType(TS.INTEGER, nil, nil, nil)
+		return TS.NewType(TS.INTEGER, nil, nil)
 
 	case *AST.ExpressionFloat:
-		return TS.NewType(TS.FLOAT, nil, nil, nil)
+		return TS.NewType(TS.FLOAT, nil, nil)
 
 	case *AST.ExpressionBoolean:
-		return TS.NewType(TS.BOOL, nil, nil, nil)
+		return TS.NewType(TS.BOOL, nil, nil)
 
 	case *AST.ExpressionString:
-		return TS.NewType(TS.STRING, nil, nil, nil)
+		return TS.NewType(TS.STRING, nil, nil)
 
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Tok)
@@ -100,7 +89,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("Typechecking error Line %d | Operation %s not supported on Left: %s | Right: %s", v.Operator.Line, v.Operator.Lexeme, lt.String(), rt.String()))
 		}
 
-		return TS.NewType(promotedType, nil, nil, nil)
+		return TS.NewType(promotedType, nil, nil)
 
 	case *AST.SE_FunctionCall:
 		return typeCheckFunctionCall(v, env)
@@ -145,7 +134,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("Builtin Len() argument is not iterable %T", v.Iterable))
 		}
 
-		return TS.NewType(TS.INTEGER, nil, nil, nil)
+		return TS.NewType(TS.INTEGER, nil, nil)
 
 	case *AST.ExpressionUnary:
 		return typeCheckExpression(v.Operand, env)
@@ -154,7 +143,6 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		return typeCheckExpression(v.Expr, env)
 
 	case *AST.ExpressionTypeCast:
-		// Later I should make sure that you can actually do this cast
 		exprType := typeCheckExpression(v.Expr, env)
 		if TS.TypeCompare(v.CastType, exprType) {
 			return v.CastType
@@ -164,44 +152,13 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("Typechecking error Line %d | Invalid cast to %s from %s", v.Tok.Line, v.CastType.String(), exprType.String()))
 		}
 
-		switch ev := v.Expr.(type) {
-		case *AST.ExpressionInteger:
-			if v.CastType.Kind == TS.STRING {
-				v.Expr = &AST.ExpressionString{
-					Value: fmt.Sprintf("%d", ev.Value),
-				}
-			}
-
-			if v.CastType.Kind == TS.FLOAT {
-				v.Expr = &AST.ExpressionFloat{
-					Value: float32(ev.Value),
-				}
-			}
-
-		case *AST.ExpressionFloat:
-			if v.CastType.Kind == TS.STRING {
-				v.Expr = &AST.ExpressionString{
-					Value: fmt.Sprintf("%.5g", ev.Value),
-				}
-			}
-
-			if v.CastType.Kind == TS.INTEGER {
-				v.Expr = &AST.ExpressionInteger{
-					Value: int(ev.Value),
-				}
-			}
-
-		default:
-			panic("undefined expression")
-		}
-
-		return typeCheckExpression(v.Expr, env)
+		return v.CastType
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
 	}
 
-	return TS.NewType(TS.INVALID_TYPE, nil, nil, nil)
+	return TS.NewType(TS.INVALID_TYPE, nil, nil)
 }
 
 func typeCheckStatement(s AST.Statement, env *TypeEnv) {
@@ -219,7 +176,12 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 
 	case *AST.StatementReturn:
 		if v.Expr != nil {
-			typeCheckExpression(v.Expr, env)
+			globalReturnStatementStack = append(globalReturnStatementStack,
+				StatementTypePair{
+					stmt: v,
+					t:    typeCheckExpression(v.Expr, env),
+				},
+			)
 		}
 
 	case *AST.StatementBreak, *AST.StatementContinue:
@@ -313,69 +275,20 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				Tok:      param.Tok,
 				DeclType: param.DeclType,
 			})
-
-			if param.DeclType.Kind == TS.TYPE_UNION {
-				fmt.Printf("%s() has unresolved type unions defering until invocation\n", v.Tok.Lexeme)
-				return
-			}
 		}
 
-		// TODO(JOVANNI): Perform and exorcism on this code later
-		// This is just stupid because i should have some way to bubble up
-		// return types like I do in the interpreter
 		for _, node := range v.Block.Body {
-			if ifElseNode, ok := node.(*AST.StatementIfElse); ok {
-				for _, b2 := range ifElseNode.IfBlock.Body {
-					if ret, ok := b2.(*AST.StatementReturn); ok {
-						if ret.Expr != nil {
-							retType := typeCheckExpression(ret.Expr, funcEnv)
-							if !TS.TypeCompare(v.DeclType.GetReturnType(), retType) {
-								panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
-							}
-						}
-
-						continue
-					}
-
-					typeCheckNode(b2, funcEnv)
-				}
-
-				if ifElseNode.ElseBlock != nil {
-					for _, n2 := range ifElseNode.ElseBlock.Body {
-						if ret, ok := n2.(*AST.StatementReturn); ok {
-							if ret.Expr != nil {
-								retType := typeCheckExpression(ret.Expr, funcEnv)
-								if !TS.TypeCompare(v.DeclType.GetReturnType(), retType) {
-									panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
-								}
-							}
-
-							continue
-						}
-
-						typeCheckNode(n2, funcEnv)
-					}
-				}
-
-				continue
-			}
-
-			if ret, ok := node.(*AST.StatementReturn); ok {
-				if v.DeclType.GetReturnType().Kind == TS.VOID && ret.Expr != nil {
+			typeCheckNode(node, funcEnv)
+			for _, pair := range globalReturnStatementStack {
+				if v.DeclType.GetReturnType().Kind == TS.VOID {
 					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Tok.Lexeme))
 				}
 
-				if ret.Expr != nil {
-					retType := typeCheckExpression(ret.Expr, funcEnv)
-					if !TS.TypeCompare(v.DeclType.GetReturnType(), retType) {
-						panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
-					}
+				if !TS.TypeCompare(v.DeclType.GetReturnType(), pair.t) {
+					panic(fmt.Sprintf("Line %d | %s() has a return type of %s but returns a %s", pair.stmt.Tok.Line, v.Tok.Lexeme, v.DeclType.GetReturnType().String(), pair.t.String()))
 				}
-
-				continue
 			}
-
-			typeCheckNode(node, funcEnv)
+			globalReturnStatementStack = nil
 		}
 	}
 }

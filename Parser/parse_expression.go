@@ -178,7 +178,7 @@ func (parser *Parser) parseLogicalExpression() AST.Expression {
 func (parser *Parser) parseArrayExpression() AST.Expression {
 	var elements []AST.Expression
 
-	declType := TS.NewType(TS.ARRAY, nil, nil, nil)
+	declType := TS.NewType(TS.ARRAY, nil, nil)
 	if parser.ctx.ParsingArrayLiteral == 0 {
 		declType = parser.parseType()
 		parser.expect(Token.DOT)
