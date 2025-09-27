@@ -88,4 +88,4 @@ func get_value(a: int, b: int) -> void {}
 <float_literal> ::= e.g (-1.01, 0.00, 1.01, 2.02, 3.03, ...)
 <string_literal> ::= e.g ("Hello", "World")
 <bool_literal> ::= "true" | "false"
-<identifier> ::= e.g(name, test, foo, bar)
+<identifier> ::= e.g (name, test, foo, bar)
