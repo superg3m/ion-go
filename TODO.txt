@@ -1,12 +1,15 @@
-- Assignment
-    - [] LHS (needs to be expression)
+- [x] Type casting
+- [x] Short circuiting
+- [x] Defer
+- [x] Arrays
+
+- [] Assignment
+    - [x] LHS (needs to be expression)
     - [] Member Assignment
 
 - Structs
     - [] Member
     - [] Union
-
-- Pointer
 
 - Errors
     - Should give you file and line
@@ -14,7 +17,3 @@
 
 - Are you comp-time known
     - [] Literals are comp-time
-
-- How do we do type casting
-
-- Short circuiting
