@@ -6,8 +6,13 @@ import (
 	"ion-go/TS"
 )
 
+type StatementTypePair struct {
+	stmt *AST.StatementReturn
+	t    *TS.Type
+}
+
 var globalFunctions map[string]*AST.DeclarationFunction
-var globalReturnStack []*TS.Type
+var globalReturnStatementStack []StatementTypePair
 
 func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 	functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
@@ -114,10 +119,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 	case *AST.ExpressionGrouping:
 		return typeCheckExpression(v.Expr, env)
 
-		// TODO(Jovanni): This is so bad because you have to do like evaluation
-		// You would much rather catch this in the parser
 	case *AST.ExpressionTypeCast:
-		// Later I should make sure that you can actually do this cast
 		exprType := typeCheckExpression(v.Expr, env)
 		if TS.TypeCompare(v.CastType, exprType) {
 			return v.CastType
@@ -151,7 +153,12 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 
 	case *AST.StatementReturn:
 		if v.Expr != nil {
-			typeCheckExpression(v.Expr, env)
+			globalReturnStatementStack = append(globalReturnStatementStack,
+				StatementTypePair{
+					stmt: v,
+					t:    typeCheckExpression(v.Expr, env),
+				},
+			)
 		}
 
 	case *AST.StatementBreak, *AST.StatementContinue:
@@ -246,24 +253,19 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				DeclType: param.DeclType,
 			})
 		}
-
-		// TODO(JOVANNI):
-		// Make sure you check the other type of statements for bubble up returns
+		
 		for _, node := range v.Block.Body {
-			if ret, ok := node.(*AST.StatementReturn); ok {
-				if v.DeclType.GetReturnType().Kind == TS.VOID && ret.Expr != nil {
+			typeCheckNode(node, funcEnv)
+			for _, pair := range globalReturnStatementStack {
+				if v.DeclType.GetReturnType().Kind == TS.VOID {
 					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Tok.Lexeme))
 				}
 
-				retType := typeCheckExpression(ret.Expr, funcEnv)
-				if TS.TypeCompare(v.DeclType, retType) {
-					panic(fmt.Sprintf("%s() has a return type of %s but returns a %s", v.Tok.Lexeme, v.DeclType.GetReturnType().String(), retType.String()))
+				if !TS.TypeCompare(v.DeclType.GetReturnType(), pair.t) {
+					panic(fmt.Sprintf("Line %d | %s() has a return type of %s but returns a %s", pair.stmt.Tok.Line, v.Tok.Lexeme, v.DeclType.GetReturnType().String(), pair.t.String()))
 				}
-
-				continue
 			}
-
-			typeCheckNode(node, funcEnv)
+			globalReturnStatementStack = nil
 		}
 	}
 }
