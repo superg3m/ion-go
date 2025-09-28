@@ -7,7 +7,7 @@ import (
 )
 
 func (parser *Parser) parseParameters() []TS.Parameter {
-	var args []TS.Parameter
+	var params []TS.Parameter
 
 	parser.expect(Token.LEFT_PAREN)
 	for !parser.consumeOnMatch(Token.RIGHT_PAREN) {
@@ -15,7 +15,7 @@ func (parser *Parser) parseParameters() []TS.Parameter {
 		parser.expect(Token.COLON)
 		dataType := parser.parseType()
 
-		args = append(args, TS.Parameter{
+		params = append(params, TS.Parameter{
 			Tok:      param,
 			DeclType: dataType,
 		})
@@ -25,7 +25,7 @@ func (parser *Parser) parseParameters() []TS.Parameter {
 		}
 	}
 
-	return args
+	return params
 }
 
 func (parser *Parser) parseVariableDeclaration() AST.Declaration {
