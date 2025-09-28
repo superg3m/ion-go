@@ -127,7 +127,7 @@ func TypeCompare(c1, c2 *Type) bool {
 		} else {
 			for i := 0; i < len(c1.Parameters); i++ {
 				param1 := c1.Parameters[i]
-				param2 := c1.Parameters[i]
+				param2 := c2.Parameters[i]
 				if param1.Tok != param2.Tok {
 					return false
 				} else if !TypeCompare(param1.DeclType, param2.DeclType) {
