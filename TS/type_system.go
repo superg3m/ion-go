@@ -118,9 +118,7 @@ func (t *Type) String() string {
 // TypeCompare NOTE(Jovanni):
 // Later on this might have like subtype and type group implications so it probably
 // won't just be a bool it will be some type of int 0 is exact type 1 is super type, -1 is not equal
-func TypeCompare(leftType, rightType *Type) bool {
-	c1, c2 := leftType, rightType
-
+func TypeCompare(c1, c2 *Type) bool {
 	for c1 != nil && c2 != nil {
 		if c1.Kind != c2.Kind {
 			return false
