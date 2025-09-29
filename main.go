@@ -11,7 +11,6 @@ import (
 
 func main() {
 	// tokenStream := Lexer.GenerateTokenStream("./test.ion")
-	// tokenStream := Lexer.GenerateTokenStream("./test.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./factorial.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./fractal.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./fib.ion")
