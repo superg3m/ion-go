@@ -186,6 +186,16 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 					accessString += fmt.Sprintf("[...]")
 				}
 
+				cast, ok := ev.Index.(*AST.ExpressionTypeCast)
+				if ok {
+					ct := typeCheckExpression(cast, env)
+					if !TS.TypeCompare(ct, TS.NewType(TS.INTEGER, nil, nil)) {
+						panic("Array Index Access is not of type int")
+					}
+
+					accessString += fmt.Sprintf("[...]")
+				}
+
 				if accessType.IsArray() {
 					accessType = accessType.RemoveArrayModifier()
 					decl = globalStruct[accessType.String()]
