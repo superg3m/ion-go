@@ -30,6 +30,12 @@ func (*ExpressionBinary) isExpression() {}
 func (*ExpressionArray) isNode()       {}
 func (*ExpressionArray) isExpression() {}
 
+func (*ExpressionStruct) isNode()       {}
+func (*ExpressionStruct) isExpression() {}
+
+func (*ExpressionStructMemberAccess) isNode()       {}
+func (*ExpressionStructMemberAccess) isExpression() {}
+
 func (*ExpressionLen) isNode()       {}
 func (*ExpressionLen) isExpression() {}
 

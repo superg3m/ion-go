@@ -66,6 +66,11 @@ func expressionToJson(e AST.Expression) any {
 			"FunctionCall": nil,
 		}
 
+	case *AST.ExpressionStructMemberAccess:
+		return map[string]any{
+			"ExpressionStructMemberAccess": nil,
+		}
+
 	default:
 		panic(fmt.Sprintf("%T", v))
 	}
@@ -176,6 +181,14 @@ func declarationToJson(decl AST.Declaration) map[string]any {
 		}
 		return map[string]any{
 			"FunctionDeclaration": desc,
+		}
+
+	case *AST.DeclarationStruct:
+		desc := map[string]any{
+			"Name": v.Tok.Lexeme,
+		}
+		return map[string]any{
+			"StructDeclaration": desc,
 		}
 
 	default:

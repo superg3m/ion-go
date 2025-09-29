@@ -8,8 +8,9 @@ import (
 )
 
 type Context struct {
-	ParsingForIncrement bool
-	ParsingArrayLiteral int
+	ParsingForIncrement     bool
+	ParsingArrayLiteral     int
+	ParsedStructDeclaration map[string]*AST.DeclarationStruct
 }
 
 type Parser struct {
@@ -68,12 +69,17 @@ func (parser *Parser) parseType() *TS.Type {
 		arrayCount += 1
 	}
 
-	if parser.peekNthToken(0).Kind != Token.IDENTIFIER {
+	next := parser.peekNthToken(0)
+	if next.Kind != Token.IDENTIFIER {
 		return nil
 	}
-
+	
 	dataTypeToken := parser.expect(Token.IDENTIFIER)
 	retType := TS.NewType(TS.TypeKind(dataTypeToken.Lexeme), nil, nil)
+
+	if _, ok := parser.ctx.ParsedStructDeclaration[dataTypeToken.Lexeme]; ok {
+		retType = retType.AddStructModifier()
+	}
 
 	for i := 0; i < arrayCount; i++ {
 		retType = retType.AddArrayModifier()
@@ -86,6 +92,7 @@ func ParseProgram(tokens []Token.Token) AST.Program {
 	parser := Parser{}
 	parser.current = 0
 	parser.tokens = tokens
+	parser.ctx.ParsedStructDeclaration = make(map[string]*AST.DeclarationStruct)
 
 	var program AST.Program
 	for parser.current < (len(parser.tokens) - 1) {

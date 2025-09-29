@@ -1,6 +1,7 @@
 package Parser
 
 import (
+	"fmt"
 	"ion-go/AST"
 	"ion-go/TS"
 	"ion-go/Token"
@@ -60,6 +61,21 @@ func (parser *Parser) parsePrimary() AST.Expression {
 			return &AST.ExpressionArrayAccess{
 				Tok:     current,
 				Indices: indices,
+			}
+		}
+
+		if next.Kind == Token.DOT {
+			var accesses []Token.Token
+			for parser.peekNthToken(0).Kind == Token.DOT {
+				parser.expect(Token.DOT)
+				
+				ident := parser.expect(Token.IDENTIFIER)
+				accesses = append(accesses, ident)
+			}
+
+			return &AST.ExpressionStructMemberAccess{
+				Tok:      current,
+				Accesses: accesses,
 			}
 		}
 
@@ -202,12 +218,53 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 	}
 }
 
+// <struct> ::= <type>.{(<expression>,)*}
+func (parser *Parser) parseStructExpression() AST.Expression {
+	values := make(map[string]AST.Expression)
+
+	typeName := parser.expect(Token.IDENTIFIER)
+	structDecl, ok := parser.ctx.ParsedStructDeclaration[typeName.Lexeme]
+	if !ok {
+		panic(fmt.Sprintf("Line %d | Type %s is not defined", typeName.Line, typeName.Lexeme))
+	}
+
+	parser.expect(Token.DOT)
+	parser.expect(Token.LEFT_CURLY)
+
+	memberCount := 0
+
+	for !parser.consumeOnMatch(Token.RIGHT_CURLY) {
+		expr := parser.parseExpression()
+		member := structDecl.Members[memberCount]
+		values[member.Tok.Lexeme] = expr
+
+		if parser.peekNthToken(0).Kind != Token.RIGHT_CURLY {
+			parser.expect(Token.COMMA)
+		}
+
+		memberCount += 1
+	}
+
+	if memberCount != len(structDecl.Members) {
+		panic(fmt.Sprintf("Line: %d | Expected members count to be: %d | Got: ", typeName.Line, len(structDecl.Members), memberCount))
+	}
+
+	return &AST.ExpressionStruct{
+		Tok:          typeName,
+		MemberValues: values,
+	}
+}
+
 // <Expression> ::= <additive>
 func (parser *Parser) parseExpression() AST.Expression {
 	current := parser.peekNthToken(0)
+	next := parser.peekNthToken(1)
+	next2 := parser.peekNthToken(2)
 
 	if current.Kind == Token.LEFT_BRACKET {
 		return parser.parseArrayExpression()
+	} else if current.Kind == Token.IDENTIFIER && next.Kind == Token.DOT && next2.Kind == Token.LEFT_CURLY {
+		return parser.parseStructExpression()
 	} else if current.Kind == Token.CAST {
 		cast := parser.expect(Token.CAST)
 		parser.expect(Token.LEFT_PAREN)

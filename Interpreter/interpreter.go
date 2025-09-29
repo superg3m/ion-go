@@ -5,9 +5,11 @@ import (
 	"ion-go/AST"
 	"ion-go/TS"
 	"ion-go/Token"
+	"strings"
 )
 
 var globalFunctions map[string]*AST.DeclarationFunction
+var globalStructs map[string]*AST.DeclarationStruct
 var globalScope Scope
 
 func evaluateArrayAccessExpression(array *AST.ExpressionArrayAccess, scope *Scope) (*AST.ExpressionArray, int) {
@@ -18,6 +20,16 @@ func evaluateArrayAccessExpression(array *AST.ExpressionArrayAccess, scope *Scop
 	}
 
 	return ret, interpretExpression(array.Indices[len(array.Indices)-1], scope).(*AST.ExpressionInteger).Value
+}
+
+func evaluateStructMemberAccessExpression(structAccess *AST.ExpressionStructMemberAccess, scope *Scope) (*AST.ExpressionStruct, string) {
+	ret := scope.get(structAccess.Tok).(*AST.ExpressionStruct)
+	for i := 0; i < len(structAccess.Accesses)-1; i++ {
+		memberName := structAccess.Accesses[i]
+		ret = interpretExpression(ret.MemberValues[memberName.Lexeme], scope).(*AST.ExpressionStruct)
+	}
+
+	return ret, structAccess.Accesses[len(structAccess.Accesses)-1].Lexeme
 }
 
 func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression) AST.Expression {
@@ -245,6 +257,18 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		operand := interpretExpression(v.Operand, scope)
 		return interpretUnaryExpression(v.Operator.Kind, operand)
 
+	case *AST.ExpressionStruct:
+		for i, element := range v.MemberValues {
+			v.MemberValues[i] = interpretExpression(element, scope)
+		}
+
+		return v
+
+	case *AST.ExpressionStructMemberAccess:
+		structAccess, name := evaluateStructMemberAccessExpression(v, scope)
+
+		return structAccess.MemberValues[name]
+
 	case *AST.ExpressionTypeCast:
 		v.Expr = interpretExpression(v.Expr, scope)
 		switch ev := v.Expr.(type) {
@@ -303,6 +327,11 @@ func interpretDeclaration(decl AST.Declaration, scope *Scope) {
 	case *AST.DeclarationFunction:
 		globalFunctions[v.Tok.Lexeme] = v
 
+	case *AST.DeclarationStruct:
+		globalStructs[v.Tok.Lexeme] = v
+
+	default:
+		panic(fmt.Sprintf("unhandled declaration: %T", decl))
 	}
 }
 
@@ -321,7 +350,11 @@ func fixNewLineCode(s string) string {
 	return string(ret)
 }
 
-func printExpression(expr AST.Expression, scope *Scope) {
+func generateIndent(level int) string {
+	return strings.Repeat(" ", level*4) // 4 spaces per indent
+}
+
+func printExpression(expr AST.Expression, scope *Scope, indentLevel int) {
 	switch v := expr.(type) {
 	case *AST.ExpressionInteger:
 		fmt.Print(v.Value)
@@ -336,7 +369,7 @@ func printExpression(expr AST.Expression, scope *Scope) {
 		fmt.Print(fixNewLineCode(v.Value))
 
 	case *AST.ExpressionIdentifier:
-		printExpression(scope.get(v.Tok), scope)
+		printExpression(scope.get(v.Tok), scope, indentLevel)
 
 	case *AST.ExpressionArray:
 		fmt.Print("[")
@@ -344,9 +377,29 @@ func printExpression(expr AST.Expression, scope *Scope) {
 			if i > 0 {
 				fmt.Print(" ")
 			}
-			printExpression(interpretExpression(elem, scope), scope)
+			printExpression(interpretExpression(elem, scope), scope, indentLevel)
 		}
-		fmt.Print("]")
+		fmt.Printf("]")
+
+	case *AST.ExpressionStruct:
+		indentLevel += 1
+		structDecl := globalStructs[v.Tok.Lexeme]
+
+		fmt.Print("{\n")
+		for i := 0; i < len(structDecl.Members); i++ {
+			name := structDecl.Members[i]
+			value := v.MemberValues[name.Tok.Lexeme]
+
+			fmt.Printf("%s%s: %s = ", generateIndent(indentLevel), name.Tok.Lexeme, name.DeclType.String())
+
+			printExpression(interpretExpression(value, scope), scope, indentLevel)
+			if i < len(structDecl.Members)-1 {
+				fmt.Println(",")
+			} else {
+				fmt.Println("")
+			}
+		}
+		fmt.Printf("%s}", generateIndent(indentLevel-1))
 
 	default:
 		panic(fmt.Sprintf("unprintable type: %T", v))
@@ -356,7 +409,7 @@ func printExpression(expr AST.Expression, scope *Scope) {
 func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	switch v := s.(type) {
 	case *AST.StatementPrint:
-		printExpression(interpretExpression(v.Expr, scope), scope)
+		printExpression(interpretExpression(v.Expr, scope), scope, 0)
 		if v.IsNewLine {
 			fmt.Println("")
 		}
@@ -380,6 +433,11 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		case *AST.ExpressionArrayAccess:
 			arr, index := evaluateArrayAccessExpression(ev, scope)
 			arr.Elements[index] = rhs
+
+		case *AST.ExpressionStructMemberAccess:
+			structAccess, name := evaluateStructMemberAccessExpression(ev, scope)
+
+			structAccess.MemberValues[name] = rhs
 
 		default:
 			panic("unreachable")
@@ -517,6 +575,7 @@ func interpretNodes(nodes []AST.Node, scope *Scope) AST.Expression {
 func InterpretProgram(program AST.Program) {
 	globalScope = CreateScope(nil)
 	globalFunctions = make(map[string]*AST.DeclarationFunction)
+	globalStructs = make(map[string]*AST.DeclarationStruct)
 
 	for _, decl := range program.Declarations {
 		interpretDeclaration(decl, &globalScope)

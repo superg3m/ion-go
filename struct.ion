@@ -1,0 +1,17 @@
+struct Foo {
+    bar: float
+}
+
+struct Person {
+    age: int,
+    foo: []Foo,
+    name: string
+}
+
+fn main() -> void {
+    var x: Person = Person.{23, []Foo.[Foo.{5.3}, Foo.{10.3}], "John"};
+    println(x.foo);
+    // println(x.foo[0].bar);
+    // x.foo[0].bar = "f";
+    println(x);
+}

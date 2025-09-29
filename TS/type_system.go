@@ -14,6 +14,7 @@ const (
 	BOOL                  = "bool"
 	STRING                = "string"
 	ARRAY                 = "[]"
+	STRUCT                = ""
 	POINTER               = "*"
 	FUNCTION              = "fn(...) -> "
 )
@@ -47,6 +48,10 @@ func (t *Type) IsPointer() bool {
 
 func (t *Type) IsArray() bool {
 	return t.Kind == ARRAY
+}
+
+func (t *Type) IsStruct() bool {
+	return t.Kind == STRUCT
 }
 
 func (t *Type) IsFunction() bool {
@@ -104,6 +109,29 @@ func (t *Type) RemoveArrayModifier() *Type {
 	return current
 }
 
+func (t *Type) AddStructModifier() *Type {
+	if t.Kind == STRUCT {
+		panic("Type is already a struct")
+	}
+
+	current := NewType(STRUCT, t, nil)
+
+	return current
+}
+
+func (t *Type) RemoveStructModifier() *Type {
+	if t.Kind != STRUCT {
+		panic("Expected ARRAY type")
+	}
+
+	current := NewType(t.Kind, t.Next, t.Parameters)
+
+	current.Kind = current.Next.Kind
+	current.Next = current.Next.Next
+
+	return current
+}
+
 func (t *Type) String() string {
 	ret := ""
 	current := t
@@ -119,6 +147,10 @@ func (t *Type) String() string {
 // Later on this might have like subtype and type group implications so it probably
 // won't just be a bool it will be some type of int 0 is exact type 1 is super type, -1 is not equal
 func TypeCompare(c1, c2 *Type) bool {
+	if c1 == nil || c2 == nil {
+		return false
+	}
+
 	for c1 != nil && c2 != nil {
 		if c1.Kind != c2.Kind {
 			return false

@@ -56,13 +56,23 @@ type ExpressionArray struct {
 	DeclType *TS.Type
 }
 
-type ExpressionLen struct {
-	Iterable Expression
-}
-
 type ExpressionArrayAccess struct {
 	Tok     Token.Token
 	Indices []Expression
+}
+
+type ExpressionStruct struct {
+	Tok          Token.Token
+	MemberValues map[string]Expression
+}
+
+type ExpressionStructMemberAccess struct {
+	Tok      Token.Token
+	Accesses []Token.Token
+}
+
+type ExpressionLen struct {
+	Iterable Expression
 }
 
 type PseudoBehavior int

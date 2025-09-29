@@ -12,6 +12,7 @@ type StatementTypePair struct {
 }
 
 var globalFunctions map[string]*AST.DeclarationFunction
+var globalStruct map[string]*AST.DeclarationStruct
 var globalReturnStatementStack []StatementTypePair
 
 func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
@@ -32,7 +33,7 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
 		argType := typeCheckExpression(v.Arguments[i], env)
 
 		if !TS.TypeCompare(param.DeclType, argType) {
-			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, argType.String(), param.DeclType.String()))
+			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, param.DeclType.String(), argType.String()))
 		}
 	}
 
@@ -98,6 +99,28 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 
 		return accessType
 
+	case *AST.ExpressionStructMemberAccess:
+		ident := env.get(v.Tok)
+		decl, ok := globalStruct[ident.DeclType.String()]
+		if !ok {
+			panic("Undefined struct: " + ident.DeclType.String())
+		}
+
+		accessType := ident.DeclType
+		accessString := ident.Tok.Lexeme
+		for i := 0; i < len(v.Accesses); i++ {
+			memberName := v.Accesses[i]
+			accessString += "." + memberName.Lexeme
+			if accessType == nil || !accessType.IsStruct() {
+				panic(fmt.Sprintf("Line: %d | undefined struct access: %s", v.Tok.Line, accessString))
+			}
+
+			accessType = decl.MemberLookup[memberName.Lexeme].DeclType
+			decl = globalStruct[accessType.String()]
+		}
+
+		return accessType
+
 	case *AST.ExpressionLen:
 		switch ev := v.Iterable.(type) {
 		case *AST.ExpressionArray:
@@ -130,6 +153,30 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		}
 
 		return v.CastType
+
+	case *AST.ExpressionStruct:
+		structDecl, ok := globalStruct[v.Tok.Lexeme]
+		if !ok {
+			panic("Undefined type: " + v.Tok.Lexeme)
+		}
+
+		argCount := len(v.MemberValues)
+		memberCount := len(structDecl.Members)
+
+		if memberCount != argCount {
+			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, memberCount))
+		}
+
+		for i := 0; i < argCount; i++ {
+			member := structDecl.Members[i]
+			argType := typeCheckExpression(v.MemberValues[member.Tok.Lexeme], env)
+
+			if !TS.TypeCompare(member.DeclType, argType) {
+				panic(fmt.Sprintf("Line %d | argument %d: expected %s: %s, got %s", v.Tok.Line, i, member.Tok.Lexeme, member.DeclType.String(), argType.String()))
+			}
+		}
+
+		return TS.NewType(TS.STRUCT, TS.NewType(TS.TypeKind(structDecl.Tok.Lexeme), nil, nil), nil)
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))
@@ -253,7 +300,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				DeclType: param.DeclType,
 			})
 		}
-		
+
 		for _, node := range v.Block.Body {
 			typeCheckNode(node, funcEnv)
 			for _, pair := range globalReturnStatementStack {
@@ -267,6 +314,16 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 			}
 			globalReturnStatementStack = nil
 		}
+
+	case *AST.DeclarationStruct:
+		if _, ok := globalStruct[v.Tok.Lexeme]; ok {
+			panic("Attempting to redeclare type: " + v.Tok.Lexeme)
+		} else {
+			globalStruct[v.Tok.Lexeme] = v
+		}
+
+	default:
+		panic(fmt.Sprintf("undefined declaration: %T", v))
 	}
 }
 
@@ -284,6 +341,7 @@ func typeCheckNode(node AST.Node, env *TypeEnv) {
 func TypeCheckProgram(program AST.Program) {
 	globalEnv := NewTypeEnv(nil)
 	globalFunctions = make(map[string]*AST.DeclarationFunction)
+	globalStruct = make(map[string]*AST.DeclarationStruct)
 
 	for _, decl := range program.Declarations {
 		typeCheckDeclaration(decl, globalEnv)

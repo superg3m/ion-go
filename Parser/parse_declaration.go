@@ -28,6 +28,28 @@ func (parser *Parser) parseParameters() []TS.Parameter {
 	return params
 }
 
+func (parser *Parser) parseMembers() []AST.Member {
+	var params []AST.Member
+
+	parser.expect(Token.LEFT_CURLY)
+	for !parser.consumeOnMatch(Token.RIGHT_CURLY) {
+		member := parser.expect(Token.IDENTIFIER)
+		parser.expect(Token.COLON)
+		dataType := parser.parseType()
+
+		params = append(params, AST.Member{
+			Tok:      member,
+			DeclType: dataType,
+		})
+
+		if parser.peekNthToken(0).Kind != Token.RIGHT_CURLY {
+			parser.expect(Token.COMMA)
+		}
+	}
+
+	return params
+}
+
 func (parser *Parser) parseVariableDeclaration() AST.Declaration {
 	parser.expect(Token.VAR)
 	ident := parser.expect(Token.IDENTIFIER)
@@ -67,6 +89,25 @@ func (parser *Parser) parseFunctionDeclaration() AST.Declaration {
 	}
 }
 
+func (parser *Parser) parseStructDeclaration() AST.Declaration {
+	parser.expect(Token.STRUCT)
+	typeName := parser.expect(Token.IDENTIFIER)
+	members := parser.parseMembers()
+
+	memberLookup := make(map[string]AST.Member)
+	for _, member := range members {
+		memberLookup[member.Tok.Lexeme] = member
+	}
+
+	parser.ctx.ParsedStructDeclaration[typeName.Lexeme] = &AST.DeclarationStruct{
+		Tok:          typeName,
+		Members:      members,
+		MemberLookup: memberLookup,
+	}
+
+	return parser.ctx.ParsedStructDeclaration[typeName.Lexeme]
+}
+
 func (parser *Parser) parseDeclaration() AST.Declaration {
 	current := parser.peekNthToken(0)
 
@@ -74,6 +115,8 @@ func (parser *Parser) parseDeclaration() AST.Declaration {
 		return parser.parseVariableDeclaration()
 	} else if current.Kind == Token.FN {
 		return parser.parseFunctionDeclaration()
+	} else if current.Kind == Token.STRUCT {
+		return parser.parseStructDeclaration()
 	}
 
 	return nil

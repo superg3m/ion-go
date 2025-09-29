@@ -45,6 +45,7 @@ const (
 
 	// Keywords
 	FN       = "FN"
+	STRUCT   = "STRUCT"
 	CAST     = "CAST"
 	VAR      = "VAR"
 	IF       = "IF"
@@ -76,6 +77,7 @@ func CreateToken(kind TokenType, lexeme string, line int) Token {
 func GetKeywordToken(input string) (TokenType, bool) {
 	var m = map[string]TokenType{
 		"fn":       FN,
+		"struct":   STRUCT,
 		"cast":     CAST,
 		"var":      VAR,
 		"if":       IF,
