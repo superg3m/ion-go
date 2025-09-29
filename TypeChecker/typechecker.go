@@ -86,40 +86,43 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 
 		return v.DeclType
 
-	case *AST.ExpressionArrayAccess:
-		decl := env.get(v.Tok)
-		accessType := decl.DeclType
-		for i := 0; i < len(v.Indices); i++ {
-			if !accessType.IsArray() {
-				panic(fmt.Sprintf("Line: %d | undefined array access: %s", v.Tok.Line, v.Tok.Lexeme))
-			}
+		/*
+			case *AST.ExpressionArrayAccess:
+				decl := env.get(v.Tok)
+				accessType := decl.DeclType
+				for i := 0; i < len(v.Indices); i++ {
+					if !accessType.IsArray() {
+						panic(fmt.Sprintf("Line: %d | undefined array access: %s", v.Tok.Line, v.Tok.Lexeme))
+					}
 
-			accessType = accessType.RemoveArrayModifier()
-		}
+					accessType = accessType.RemoveArrayModifier()
+				}
 
-		return accessType
+				return accessType
 
-	case *AST.ExpressionStructMemberAccess:
-		ident := env.get(v.Tok)
-		decl, ok := globalStruct[ident.DeclType.String()]
-		if !ok {
-			panic("Undefined struct: " + ident.DeclType.String())
-		}
+			case *AST.ExpressionStructMemberAccess:
+				ident := env.get(v.Tok)
+				decl, ok := globalStruct[ident.DeclType.String()]
+				if !ok {
+					panic("Undefined struct: " + ident.DeclType.String())
+				}
 
-		accessType := ident.DeclType
-		accessString := ident.Tok.Lexeme
-		for i := 0; i < len(v.Accesses); i++ {
-			memberName := v.Accesses[i]
-			accessString += "." + memberName.Lexeme
-			if accessType == nil || !accessType.IsStruct() {
-				panic(fmt.Sprintf("Line: %d | undefined struct access: %s", v.Tok.Line, accessString))
-			}
+				accessType := ident.DeclType
+				accessString := ident.Tok.Lexeme
+				for i := 0; i < len(v.Accesses); i++ {
+					memberName := v.Accesses[i]
+					accessString += "." + memberName.Lexeme
+					if accessType == nil || !accessType.IsStruct() {
+						panic(fmt.Sprintf("Line: %d | undefined struct access: %s", v.Tok.Line, accessString))
+					}
 
-			accessType = decl.MemberLookup[memberName.Lexeme].DeclType
-			decl = globalStruct[accessType.String()]
-		}
+					accessType = decl.MemberLookup[memberName.Lexeme].DeclType
+					decl = globalStruct[accessType.String()]
+				}
 
-		return accessType
+				return accessType
+
+		*/
 
 	case *AST.ExpressionLen:
 		switch ev := v.Iterable.(type) {
@@ -177,6 +180,38 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		}
 
 		return TS.NewType(TS.STRUCT, TS.NewType(TS.TypeKind(structDecl.Tok.Lexeme), nil, nil), nil)
+
+	case *AST.ExpressionAccessChain:
+		ident := env.get(v.Tok)
+		decl := globalStruct[ident.DeclType.String()]
+
+		accessType := ident.DeclType
+		accessString := ident.Tok.Lexeme
+
+		for i := 0; i < len(v.AccessKeys); i++ {
+			switch ev := v.AccessKeys[i].(type) {
+			case *AST.ExpressionIdentifier:
+				memberName := ev.Tok
+				accessString += "." + memberName.Lexeme
+				if accessType == nil || !accessType.IsStruct() {
+					panic(fmt.Sprintf("Line: %d | undefined struct access: %s", v.Tok.Line, accessString))
+				}
+
+				accessType = decl.MemberLookup[memberName.Lexeme].DeclType
+				decl = globalStruct[accessType.String()]
+
+			case *AST.ExpressionArrayAccess:
+				accessString += fmt.Sprintf("[%d]", ev.Index)
+				if accessType.IsArray() {
+					accessType = accessType.RemoveArrayModifier()
+					decl = globalStruct[accessType.String()]
+				} else {
+					panic(fmt.Sprintf("Line: %d | undefined array access: %s", v.Tok.Line, accessString))
+				}
+			}
+		}
+
+		return accessType
 
 	default:
 		panic(fmt.Sprintf("undefined statement: %T", v))

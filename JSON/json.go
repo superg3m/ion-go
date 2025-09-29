@@ -41,11 +41,6 @@ func expressionToJson(e AST.Expression) any {
 			"DeclType": v.DeclType,
 		}
 
-	case *AST.ExpressionArrayAccess:
-		return map[string]any{
-			"ArrayAccess": v.Tok.Lexeme,
-		}
-
 	case *AST.ExpressionLen:
 		return map[string]any{
 			"ExpressionLen": expressionToJson(v.Iterable),
@@ -66,9 +61,14 @@ func expressionToJson(e AST.Expression) any {
 			"FunctionCall": nil,
 		}
 
-	case *AST.ExpressionStructMemberAccess:
+	case *AST.ExpressionAccessChain:
 		return map[string]any{
-			"ExpressionStructMemberAccess": nil,
+			"ExpressionAccessChain": nil,
+		}
+
+	case *AST.ExpressionTypeCast:
+		return map[string]any{
+			"ExpressionTypeCast": nil,
 		}
 
 	default:

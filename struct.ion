@@ -9,9 +9,14 @@ struct Person {
 }
 
 fn main() -> void {
+    var test := []Foo.[Foo.{5.3}, Foo.{10.3}];
     var x: Person = Person.{23, []Foo.[Foo.{5.3}, Foo.{10.3}], "John"};
-    println(x.foo);
-    // println(x.foo[0].bar);
-    // x.foo[0].bar = "f";
+
+    x.name = cast(string)43.6;
+
+    test[0].bar = 3.9;
+    println(test[0].bar);
+    println(x.foo[0].bar);
+    x.foo[0].bar = 64.2;
     println(x);
 }

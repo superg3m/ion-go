@@ -57,18 +57,18 @@ type ExpressionArray struct {
 }
 
 type ExpressionArrayAccess struct {
-	Tok     Token.Token
-	Indices []Expression
+	Tok   Token.Token
+	Index Expression
+}
+
+type ExpressionAccessChain struct {
+	Tok        Token.Token
+	AccessKeys []Expression // if its a struct then its an identifier key, if its a array its a index key
 }
 
 type ExpressionStruct struct {
 	Tok          Token.Token
 	MemberValues map[string]Expression
-}
-
-type ExpressionStructMemberAccess struct {
-	Tok      Token.Token
-	Accesses []Token.Token
 }
 
 type ExpressionLen struct {

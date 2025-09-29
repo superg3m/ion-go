@@ -12,6 +12,7 @@ var globalFunctions map[string]*AST.DeclarationFunction
 var globalStructs map[string]*AST.DeclarationStruct
 var globalScope Scope
 
+/*
 func evaluateArrayAccessExpression(array *AST.ExpressionArrayAccess, scope *Scope) (*AST.ExpressionArray, int) {
 	ret := scope.get(array.Tok).(*AST.ExpressionArray)
 	for i := 0; i < len(array.Indices)-1; i++ {
@@ -30,6 +31,37 @@ func evaluateStructMemberAccessExpression(structAccess *AST.ExpressionStructMemb
 	}
 
 	return ret, structAccess.Accesses[len(structAccess.Accesses)-1].Lexeme
+}
+
+*/
+
+// Returns either a struct or array and then their respective indices
+func evaluateAccessChainExpression(chain *AST.ExpressionAccessChain, scope *Scope) (AST.Expression, AST.Expression) {
+	ret := scope.get(chain.Tok)
+	for i := 0; i < len(chain.AccessKeys)-1; i++ {
+		switch ev := chain.AccessKeys[i].(type) {
+		case *AST.ExpressionArrayAccess:
+			temp := ret.(*AST.ExpressionArray)
+			index := interpretExpression(ev.Index, scope).(*AST.ExpressionInteger).Value
+			ret = interpretExpression(temp.Elements[index], scope)
+
+		case *AST.ExpressionIdentifier:
+			temp := ret.(*AST.ExpressionStruct)
+			index := ev.Tok.Lexeme
+			ret = interpretExpression(temp.MemberValues[index], scope)
+		}
+	}
+
+	var index AST.Expression = nil
+	switch ev := chain.AccessKeys[len(chain.AccessKeys)-1].(type) {
+	case *AST.ExpressionArrayAccess:
+		index = ev.Index
+
+	case *AST.ExpressionIdentifier:
+		index = ev
+	}
+
+	return ret, index
 }
 
 func interpretBinaryExpression(kind Token.TokenType, left, right AST.Expression) AST.Expression {
@@ -246,9 +278,12 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 		return v
 
-	case *AST.ExpressionArrayAccess:
-		arr, index := evaluateArrayAccessExpression(v, scope)
-		return arr.Elements[index]
+		/*
+			case *AST.ExpressionArrayAccess:
+				arr, index := evaluateArrayAccessExpression(v, scope)
+				return arr.Elements[index]
+
+		*/
 
 	case *AST.ExpressionPseudo:
 		return interpretExpression(v.Expr, scope)
@@ -264,10 +299,17 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 		return v
 
-	case *AST.ExpressionStructMemberAccess:
-		structAccess, name := evaluateStructMemberAccessExpression(v, scope)
+	case *AST.ExpressionAccessChain:
+		ret, index := evaluateAccessChainExpression(v, scope)
+		switch ev := ret.(type) {
+		case *AST.ExpressionArray:
+			return ev.Elements[interpretExpression(index, scope).(*AST.ExpressionInteger).Value]
+		case *AST.ExpressionStruct:
+			return ev.MemberValues[index.(*AST.ExpressionIdentifier).Tok.Lexeme]
 
-		return structAccess.MemberValues[name]
+		default:
+			panic("unreachable")
+		}
 
 	case *AST.ExpressionTypeCast:
 		v.Expr = interpretExpression(v.Expr, scope)
@@ -430,14 +472,17 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 		case *AST.ExpressionIdentifier:
 			scope.set(ev.Tok, rhs)
 
-		case *AST.ExpressionArrayAccess:
-			arr, index := evaluateArrayAccessExpression(ev, scope)
-			arr.Elements[index] = rhs
+		case *AST.ExpressionAccessChain:
+			ret, index := evaluateAccessChainExpression(ev, scope)
+			switch lv := ret.(type) {
+			case *AST.ExpressionArray:
+				lv.Elements[interpretExpression(index, scope).(*AST.ExpressionInteger).Value] = rhs
+			case *AST.ExpressionStruct:
+				lv.MemberValues[index.(*AST.ExpressionIdentifier).Tok.Lexeme] = rhs
 
-		case *AST.ExpressionStructMemberAccess:
-			structAccess, name := evaluateStructMemberAccessExpression(ev, scope)
-
-			structAccess.MemberValues[name] = rhs
+			default:
+				panic("unreachable")
+			}
 
 		default:
 			panic("unreachable")

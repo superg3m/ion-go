@@ -26,6 +26,37 @@ func (parser *Parser) parseArguments() []AST.Expression {
 	return ret
 }
 
+func (parser *Parser) parseAccessChainExpression(token Token.Token) *AST.ExpressionAccessChain {
+	var keys []AST.Expression
+
+	inital_token := token
+
+	next := parser.peekNthToken(0).Kind
+	for next == Token.LEFT_BRACKET || next == Token.DOT {
+		next = parser.peekNthToken(0).Kind
+
+		if parser.consumeOnMatch(Token.DOT) {
+			token = parser.expect(Token.IDENTIFIER)
+			keys = append(keys, &AST.ExpressionIdentifier{
+				Tok: token,
+			})
+		}
+
+		if parser.consumeOnMatch(Token.LEFT_BRACKET) {
+			keys = append(keys, &AST.ExpressionArrayAccess{
+				Tok:   token,
+				Index: parser.parseExpression(),
+			})
+			parser.expect(Token.RIGHT_BRACKET)
+		}
+	}
+
+	return &AST.ExpressionAccessChain{
+		Tok:        inital_token,
+		AccessKeys: keys,
+	}
+}
+
 // <Primary>    ::= <integer> | <float> | <boolean> | <string> | '(' <Expression> ')'
 func (parser *Parser) parsePrimary() AST.Expression {
 	current := parser.peekNthToken(0)
@@ -50,33 +81,8 @@ func (parser *Parser) parsePrimary() AST.Expression {
 		}
 	} else if parser.consumeOnMatch(Token.IDENTIFIER) {
 		next := parser.peekNthToken(0)
-		if next.Kind == Token.LEFT_BRACKET {
-			var indices []AST.Expression
-			for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {
-				parser.expect(Token.LEFT_BRACKET)
-				indices = append(indices, parser.parseExpression())
-				parser.expect(Token.RIGHT_BRACKET)
-			}
-
-			return &AST.ExpressionArrayAccess{
-				Tok:     current,
-				Indices: indices,
-			}
-		}
-
-		if next.Kind == Token.DOT {
-			var accesses []Token.Token
-			for parser.peekNthToken(0).Kind == Token.DOT {
-				parser.expect(Token.DOT)
-				
-				ident := parser.expect(Token.IDENTIFIER)
-				accesses = append(accesses, ident)
-			}
-
-			return &AST.ExpressionStructMemberAccess{
-				Tok:      current,
-				Accesses: accesses,
-			}
+		if next.Kind == Token.DOT || next.Kind == Token.LEFT_BRACKET {
+			return parser.parseAccessChainExpression(current)
 		}
 
 		if next.Kind == Token.LEFT_PAREN {
