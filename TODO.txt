@@ -3,13 +3,12 @@
 - [x] Defer
 - [x] Arrays
 
-- [] Assignment
+- [x] Assignment
     - [x] LHS (needs to be expression)
-    - [] Member Assignment
+    - [x] Member Assignment
 
-- Structs
-    - [] Member
-    - [] Union
+- [x] Structs
+    - [x] Members
 
 - Errors
     - Should give you file and line
@@ -17,3 +16,12 @@
 
 - Are you comp-time known
     - [] Literals are comp-time
+
+{
+    age: int = 23,
+    foo: []Foo = [
+        {bar: float = 6.2},
+        {bar: float = 10}
+    ],
+    name: string = John
+}

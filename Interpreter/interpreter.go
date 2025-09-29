@@ -12,29 +12,6 @@ var globalFunctions map[string]*AST.DeclarationFunction
 var globalStructs map[string]*AST.DeclarationStruct
 var globalScope Scope
 
-/*
-func evaluateArrayAccessExpression(array *AST.ExpressionArrayAccess, scope *Scope) (*AST.ExpressionArray, int) {
-	ret := scope.get(array.Tok).(*AST.ExpressionArray)
-	for i := 0; i < len(array.Indices)-1; i++ {
-		index := interpretExpression(array.Indices[i], scope).(*AST.ExpressionInteger).Value
-		ret = interpretExpression(ret.Elements[index], scope).(*AST.ExpressionArray)
-	}
-
-	return ret, interpretExpression(array.Indices[len(array.Indices)-1], scope).(*AST.ExpressionInteger).Value
-}
-
-func evaluateStructMemberAccessExpression(structAccess *AST.ExpressionStructMemberAccess, scope *Scope) (*AST.ExpressionStruct, string) {
-	ret := scope.get(structAccess.Tok).(*AST.ExpressionStruct)
-	for i := 0; i < len(structAccess.Accesses)-1; i++ {
-		memberName := structAccess.Accesses[i]
-		ret = interpretExpression(ret.MemberValues[memberName.Lexeme], scope).(*AST.ExpressionStruct)
-	}
-
-	return ret, structAccess.Accesses[len(structAccess.Accesses)-1].Lexeme
-}
-
-*/
-
 // Returns either a struct or array and then their respective indices
 func evaluateAccessChainExpression(chain *AST.ExpressionAccessChain, scope *Scope) (AST.Expression, AST.Expression) {
 	ret := scope.get(chain.Tok)
@@ -278,13 +255,6 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 		return v
 
-		/*
-			case *AST.ExpressionArrayAccess:
-				arr, index := evaluateArrayAccessExpression(v, scope)
-				return arr.Elements[index]
-
-		*/
-
 	case *AST.ExpressionPseudo:
 		return interpretExpression(v.Expr, scope)
 
@@ -414,27 +384,31 @@ func printExpression(expr AST.Expression, scope *Scope, indentLevel int) {
 		printExpression(scope.get(v.Tok), scope, indentLevel)
 
 	case *AST.ExpressionArray:
-		fmt.Print("[")
+		indentLevel += 1
+		fmt.Println("[")
 		for i, elem := range v.Elements {
-			if i > 0 {
-				fmt.Print(" ")
-			}
+			fmt.Printf("%s", generateIndent(indentLevel))
 			printExpression(interpretExpression(elem, scope), scope, indentLevel)
+			if i < len(v.Elements)-1 {
+				fmt.Println(",")
+			} else {
+				fmt.Println("")
+			}
 		}
-		fmt.Printf("]")
+		fmt.Printf("%s]", generateIndent(indentLevel-1))
 
 	case *AST.ExpressionStruct:
 		indentLevel += 1
 		structDecl := globalStructs[v.Tok.Lexeme]
 
-		fmt.Print("{\n")
+		fmt.Println("{")
 		for i := 0; i < len(structDecl.Members); i++ {
 			name := structDecl.Members[i]
 			value := v.MemberValues[name.Tok.Lexeme]
 
 			fmt.Printf("%s%s: %s = ", generateIndent(indentLevel), name.Tok.Lexeme, name.DeclType.String())
-
 			printExpression(interpretExpression(value, scope), scope, indentLevel)
+
 			if i < len(structDecl.Members)-1 {
 				fmt.Println(",")
 			} else {
