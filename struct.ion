@@ -1,5 +1,5 @@
 struct Foo {
-    bar: float
+    bar: int
 }
 
 struct Person {
@@ -14,12 +14,14 @@ fn do_something(x: Person) -> void {
 
 
 fn main() -> void {
-    var test := []Foo.[Foo.{5.3}, Foo.{10.3}];
-    var x: Person = Person.{23, []Foo.[Foo.{5.3}, Foo.{10.3}], "John"};
-    test[0].bar = 3.9;
+    var test := []Foo.[Foo.{0}, Foo.{2}];
+    var x: Person = Person.{23, []Foo.[Foo.{5}, Foo.{10}], "John"};
+    test[0].bar = 1;
     println(test[0].bar);
     println(x.foo[0].bar);
-    x.foo[0].bar = 64.2;
+    x.foo[0].bar = 6;
+
+    test[test[0].bar].bar = 53;
 
     do_something(x);
 }

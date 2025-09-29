@@ -86,44 +86,6 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 
 		return v.DeclType
 
-		/*
-			case *AST.ExpressionArrayAccess:
-				decl := env.get(v.Tok)
-				accessType := decl.DeclType
-				for i := 0; i < len(v.Indices); i++ {
-					if !accessType.IsArray() {
-						panic(fmt.Sprintf("Line: %d | undefined array access: %s", v.Tok.Line, v.Tok.Lexeme))
-					}
-
-					accessType = accessType.RemoveArrayModifier()
-				}
-
-				return accessType
-
-			case *AST.ExpressionStructMemberAccess:
-				ident := env.get(v.Tok)
-				decl, ok := globalStruct[ident.DeclType.String()]
-				if !ok {
-					panic("Undefined struct: " + ident.DeclType.String())
-				}
-
-				accessType := ident.DeclType
-				accessString := ident.Tok.Lexeme
-				for i := 0; i < len(v.Accesses); i++ {
-					memberName := v.Accesses[i]
-					accessString += "." + memberName.Lexeme
-					if accessType == nil || !accessType.IsStruct() {
-						panic(fmt.Sprintf("Line: %d | undefined struct access: %s", v.Tok.Line, accessString))
-					}
-
-					accessType = decl.MemberLookup[memberName.Lexeme].DeclType
-					decl = globalStruct[accessType.String()]
-				}
-
-				return accessType
-
-		*/
-
 	case *AST.ExpressionLen:
 		switch ev := v.Iterable.(type) {
 		case *AST.ExpressionArray:
@@ -201,7 +163,29 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 				decl = globalStruct[accessType.String()]
 
 			case *AST.ExpressionArrayAccess:
-				accessString += fmt.Sprintf("[%d]", ev.Index)
+				index, ok := ev.Index.(*AST.ExpressionInteger)
+				if ok {
+					accessString += fmt.Sprintf("[%d]", index.Value)
+				}
+
+				identifier, ok := ev.Index.(*AST.ExpressionIdentifier)
+				if ok {
+					if !TS.TypeCompare(typeCheckExpression(identifier, env), TS.NewType(TS.INTEGER, nil, nil)) {
+						panic("Array Index Access is not of type int")
+					}
+
+					accessString += fmt.Sprintf("[%d]", identifier.Tok.Lexeme)
+				}
+
+				acc, ok := ev.Index.(*AST.ExpressionAccessChain)
+				if ok {
+					if !TS.TypeCompare(typeCheckExpression(acc, env), TS.NewType(TS.INTEGER, nil, nil)) {
+						panic("Array Index Access is not of type int")
+					}
+
+					accessString += fmt.Sprintf("[...]")
+				}
+
 				if accessType.IsArray() {
 					accessType = accessType.RemoveArrayModifier()
 					decl = globalStruct[accessType.String()]
