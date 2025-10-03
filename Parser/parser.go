@@ -63,8 +63,10 @@ func (parser *Parser) previousToken() Token.Token {
 
 func (parser *Parser) parseType() *TS.Type {
 	arrayCount := 0
+
 	for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {
 		parser.consumeOnMatch(Token.LEFT_BRACKET)
+		parser.parseExpression()
 		parser.consumeOnMatch(Token.RIGHT_BRACKET)
 		arrayCount += 1
 	}
@@ -73,7 +75,7 @@ func (parser *Parser) parseType() *TS.Type {
 	if next.Kind != Token.IDENTIFIER {
 		return nil
 	}
-	
+
 	dataTypeToken := parser.expect(Token.IDENTIFIER)
 	retType := TS.NewType(TS.TypeKind(dataTypeToken.Lexeme), nil, nil)
 

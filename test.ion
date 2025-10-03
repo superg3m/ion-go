@@ -1,7 +1,6 @@
 var cool_factor := 7.0;
 
 fn do_something(arr: []float, y: int, z: float) -> float {
-
     var x := 5.4 + y + z;
     x = x * 2;
 

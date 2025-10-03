@@ -252,7 +252,7 @@ func (parser *Parser) parseStructExpression() AST.Expression {
 	}
 
 	if memberCount != len(structDecl.Members) {
-		panic(fmt.Sprintf("Line: %d | Expected members count to be: %d | Got: ", typeName.Line, len(structDecl.Members), memberCount))
+		panic(fmt.Sprintf("Line: %d | Expected members count to be: %d | Got: %d", typeName.Line, len(structDecl.Members), memberCount))
 	}
 
 	return &AST.ExpressionStruct{

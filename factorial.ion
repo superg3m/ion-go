@@ -7,5 +7,7 @@ fn factorial(x: int) -> int {
 }
 
 fn main() -> void {
-    print(factorial(10));
+    defer println(factorial(10));
+    var x: int = factorial(5);
+    println(x);
 }

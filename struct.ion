@@ -12,11 +12,11 @@ fn do_something(x: Person) -> void {
     println(x);
 }
 
-
 fn main() -> void {
     var test := []Foo.[Foo.{1.5}, Foo.{2.2}];
     var x: Person = Person.{23, []Foo.[Foo.{5.2}, Foo.{10.0}], "John"};
     test[0].bar = 1.4;
+
     println(test[0].bar);
     println(x.foo[0].bar);
     x.foo[0].bar = 6.2;

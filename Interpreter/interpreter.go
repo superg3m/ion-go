@@ -363,10 +363,25 @@ func fixNewLineCode(s string) string {
 }
 
 func generateIndent(level int) string {
-	return strings.Repeat(" ", level*4) // 4 spaces per indent
+	if level <= 0 {
+		return ""
+	}
+
+	return strings.Repeat(" ", level*4)
 }
 
-func printExpression(expr AST.Expression, scope *Scope, indentLevel int) {
+func printExpression(expr AST.Expression, scope *Scope, indentLevel int, newLine bool) {
+	nl := ""
+	indentForMembers := ""
+	indentForCloser := generateIndent(indentLevel)
+
+	if newLine {
+		nl = "\n"
+		indentForMembers = generateIndent(indentLevel + 1)
+	} else {
+		indentForCloser = ""
+	}
+
 	switch v := expr.(type) {
 	case *AST.ExpressionInteger:
 		fmt.Print(v.Value)
@@ -381,41 +396,45 @@ func printExpression(expr AST.Expression, scope *Scope, indentLevel int) {
 		fmt.Print(fixNewLineCode(v.Value))
 
 	case *AST.ExpressionIdentifier:
-		printExpression(scope.get(v.Tok), scope, indentLevel)
+		printExpression(scope.get(v.Tok), scope, indentLevel, newLine)
 
 	case *AST.ExpressionArray:
-		indentLevel += 1
-		fmt.Println("[")
+		fmt.Printf("[")
+
+		nextLevel := indentLevel + 1
 		for i, elem := range v.Elements {
-			fmt.Printf("%s", generateIndent(indentLevel))
-			printExpression(interpretExpression(elem, scope), scope, indentLevel)
+			printExpression(interpretExpression(elem, scope), scope, nextLevel, false)
+
 			if i < len(v.Elements)-1 {
-				fmt.Println(",")
-			} else {
-				fmt.Println("")
+				fmt.Printf(", ")
 			}
 		}
-		fmt.Printf("%s]", generateIndent(indentLevel-1))
+
+		fmt.Printf("%s]", indentForCloser)
 
 	case *AST.ExpressionStruct:
-		indentLevel += 1
 		structDecl := globalStructs[v.Tok.Lexeme]
 
-		fmt.Println("{")
+		fmt.Printf("{")
+
+		nextLevel := indentLevel + 1
+
 		for i := 0; i < len(structDecl.Members); i++ {
 			name := structDecl.Members[i]
 			value := v.MemberValues[name.Tok.Lexeme]
 
-			fmt.Printf("%s%s: %s = ", generateIndent(indentLevel), name.Tok.Lexeme, name.DeclType.String())
-			printExpression(interpretExpression(value, scope), scope, indentLevel)
+			fmt.Printf("%s%s", nl, indentForMembers)
+
+			fmt.Printf("%s: %s = ", name.Tok.Lexeme, name.DeclType.String())
+
+			printExpression(interpretExpression(value, scope), scope, nextLevel, false)
 
 			if i < len(structDecl.Members)-1 {
-				fmt.Println(",")
-			} else {
-				fmt.Println("")
+				fmt.Printf(", ")
 			}
 		}
-		fmt.Printf("%s}", generateIndent(indentLevel-1))
+
+		fmt.Printf("%s%s}", nl, indentForCloser)
 
 	default:
 		panic(fmt.Sprintf("unprintable type: %T", v))
@@ -425,7 +444,7 @@ func printExpression(expr AST.Expression, scope *Scope, indentLevel int) {
 func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 	switch v := s.(type) {
 	case *AST.StatementPrint:
-		printExpression(interpretExpression(v.Expr, scope), scope, 0)
+		printExpression(interpretExpression(v.Expr, scope), scope, 0, true)
 		if v.IsNewLine {
 			fmt.Println("")
 		}
