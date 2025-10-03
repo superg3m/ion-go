@@ -2,8 +2,8 @@ var leftEdge   := -520.0;
 var rightEdge  := 300.0;
 var topEdge    := 300.0;
 var bottomEdge := -300.0;
-var xStep      := 3.0;
-var yStep      := 7.0;
+var xStep      := 5.0;
+var yStep      := 10.0;
 
 var maxIter    := 100;
 

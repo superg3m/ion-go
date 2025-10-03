@@ -32,14 +32,14 @@ fn main() -> void {
     println(arr2[0]);
     println(arr2[0][1]);
 
-    var test := -(5.5);
+    var test := -(6.5);
     var arr := []float.[1.5, test];
     var kldfjdskljf: float = 64 + do_something(arr, 6, cast(float)5.0);
 
     println(kldfjdskljf);
     println(arr);
 
-    var x := cast(string)5.3 + 5;
+    var x := cast(string)kldfjdskljf + 505.3 + 5;
     println(x);
     println(len(x));
 }

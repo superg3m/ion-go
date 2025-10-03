@@ -13,8 +13,8 @@ func main() {
 	// tokenStream := Lexer.GenerateTokenStream("./factorial.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./fib.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./array.ion")
-	tokenStream := Lexer.GenerateTokenStream("./fractal.ion")
-	// tokenStream := Lexer.GenerateTokenStream("./test.ion")
+	// tokenStream := Lexer.GenerateTokenStream("./fractal.ion")
+	tokenStream := Lexer.GenerateTokenStream("./test.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./struct.ion")
 
 	for i := 0; i < len(tokenStream); i++ {
