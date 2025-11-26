@@ -39,7 +39,7 @@ fn main() -> void {
     println(kldfjdskljf);
     println(arr);
 
-    var x := cast(string)kldfjdskljf + 505.3 + 5;
+    var x := cast(string)(kldfjdskljf + 505.3 + 5);
     println(x);
     println(len(x));
 }

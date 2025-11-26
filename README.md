@@ -2,9 +2,105 @@
 The ion programming language
 
 1. FrontEnd: lexing + parsing + AST
-2. Analysis: semantic analysis, optimization (optional)
-3. Backend: codegen (bytecode or native code)
-4. Interpreter: interpreting bytecode or walking the AST
+2. Analysis: semantic analysis, typechecking
+3. Interpreter: AST Treewalk
+
+## Language Features
+Ion supports:
+- Structs
+- Slices and multi-dimensional slices
+- Functions with typed parameters and return values
+- Type inference (:=)
+- Struct literals and slice literals
+- Indexing and nested indexing
+- Casting
+- Control flow (if, for, continue, return)
+- defer blocks with LIFO execution
+- Recursion
+- Built-ins: len()
+- Basic string concatenation and printing
+
+### Examples
+```go
+// struct.ion
+struct Foo {
+    bar: float
+}
+
+struct Person {
+    age: int,
+    foo: []Foo,
+    name: string
+}
+
+fn do_something(x: Person) -> void {
+    println(x);
+}
+
+fn main() -> void {
+    var test := []Foo.[Foo.{1.5}, Foo.{2.2}];
+    var x: Person = Person.{23, []Foo.[Foo.{5.2}, Foo.{10.0}], "John"};
+
+    println(test);
+    test[0].bar = 1.2;
+    test[1].bar = 404.2;
+    println(test);
+
+    println(test[0].bar);
+    println(x.foo[0].bar);
+    x.foo[0].bar = 6.2;
+
+    test[cast(int)test[0].bar].bar = 53.2;
+
+    do_something(x);
+    println(test);
+}
+
+/* OUTPUT:
+[{bar: float = 1.5}, {bar: float = 2.2}]
+[{bar: float = 1.2}, {bar: float = 404.2}]
+1.2
+5.2
+{
+    age: int = 23,
+    foo: []Foo = [{bar: float = 6.2}, {bar: float = 10}],
+    name: string = John
+}
+[{bar: float = 1.2}, {bar: float = 53.2}]
+ */
+```
+
+```go
+// fib.ion
+fn fib(x: int) -> int {
+    if (x == 0 || x == 1) {
+        return x;
+    }
+    return fib(x - 1) + fib(x - 2);
+}
+
+fn main() -> void {
+    defer {
+        defer print(fib(8) + "\n");
+        print("Hello world\n");
+    }
+
+    defer print("THIS IS ACTUALLY BEFORE LAST DEFER!\n");
+
+    if (true || fib(100) > 4) {
+        print("First!\n");
+        return;
+    }
+
+    print("NOT HAPPENING\n");
+}
+/* OUTPUT:
+First!
+THIS IS ACTUALLY BEFORE LAST DEFER!
+Hello world
+21
+*/
+```
 
 BNF Key
 --------------------------------
