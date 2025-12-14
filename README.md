@@ -102,6 +102,7 @@ Hello world
 */
 ```
 
+```
 BNF Key
 --------------------------------
 <foo>       Nonterminal (rule defined elsewhere)
@@ -185,3 +186,4 @@ func get_value(a: int, b: int) -> void {}
 <string_literal> ::= e.g ("Hello", "World")
 <bool_literal> ::= "true" | "false"
 <identifier> ::= e.g(name, test, foo, bar)
+```
