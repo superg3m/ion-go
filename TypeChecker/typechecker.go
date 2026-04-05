@@ -250,7 +250,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 	case *AST.StatementFor:
 		typeCheckDeclaration(v.Initializer, env)
 		condition := typeCheckExpression(v.Condition, env)
-		if condition.Kind != TS.BOOL {
+		if _, ok := condition.(*TS.BoolType); !ok {
 			panic("For statement condition doesn't resolve to a bool it resolves to: " + condition.String())
 		}
 
@@ -264,7 +264,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 
 	case *AST.StatementWhile:
 		condition := typeCheckExpression(v.Condition, env)
-		if condition.Kind != TS.BOOL {
+		if _, ok := condition.(*TS.BoolType); !ok {
 			panic("For statement condition doesn't resolve to a bool it resolves to: " + condition.String())
 		}
 
@@ -274,7 +274,7 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 
 	case *AST.StatementIfElse:
 		condition := typeCheckExpression(v.Condition, env)
-		if condition.Kind != TS.BOOL {
+		if _, ok := condition.(*TS.BoolType); !ok {
 			panic("For statement condition doesn't resolve to a bool it resolves to: " + condition.String())
 		}
 
@@ -305,7 +305,8 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 	switch v := decl.(type) {
 	case *AST.DeclarationVariable:
 		rhsType := typeCheckExpression(v.RHS, env)
-		if v.DeclType == nil || v.DeclType.Kind == TS.INVALID_TYPE {
+		// NOTE(Jovanni): This is actually patching the ast to infer the type (can be very tricky...)
+		if v.DeclType == nil {
 			v.DeclType = rhsType
 		}
 
@@ -316,33 +317,39 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 		}
 
 	case *AST.DeclarationFunction:
+		functionType := v.DeclType.(*TS.FunctionType)
+		
 		if _, ok := globalFunctions[v.Tok.Lexeme]; ok {
 			panic("Attempting to redeclare function " + v.Tok.Lexeme)
 		} else {
 			globalFunctions[v.Tok.Lexeme] = v
 		}
 
-		_, ok := v.Block.Body[len(v.Block.Body)-1].(*AST.StatementReturn)
-		if !ok && v.DeclType.GetReturnType().Kind != TS.VOID {
-			panic(fmt.Sprintf("%s() body is missing a return statement or it is not the last statement in the body", v.Tok.Lexeme))
+		_, hasReturnType := v.Block.Body[len(v.Block.Body)-1].(*AST.StatementReturn)
+		returnType := functionType.ReturnType
+		_, isReturnTypeVoid := returnType.(*TS.VoidType)
+		if !hasReturnType && !isReturnTypeVoid {
+			// v.Tok.Lexeme
+			panic(fmt.Sprintf("%s body is missing a return statement or it is not the last statement in the body", functionType.String()))
 		}
 
 		funcEnv := NewTypeEnv(env)
-		for _, param := range v.DeclType.Parameters {
+		for _, paramType := range functionType.ParamTypes {
 			funcEnv.set(param.Tok, &AST.DeclarationVariable{
 				Tok:      param.Tok,
-				DeclType: param.DeclType,
+				DeclType: paramType,
+				RHS:      nil,
 			})
 		}
 
 		for _, node := range v.Block.Body {
 			typeCheckNode(node, funcEnv)
 			for _, pair := range globalReturnStatementStack {
-				if v.DeclType.GetReturnType().Kind == TS.VOID {
+				if isReturnTypeVoid {
 					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Tok.Lexeme))
 				}
 
-				if !TS.TypeCompare(v.DeclType.GetReturnType(), pair.t) {
+				if !TS.TypeCompare(returnType, pair.t) {
 					panic(fmt.Sprintf("Line %d | %s() has a return type of %s but returns a %s", pair.stmt.Tok.Line, v.Tok.Lexeme, v.DeclType.GetReturnType().String(), pair.t.String()))
 				}
 			}
