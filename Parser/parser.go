@@ -61,7 +61,7 @@ func (parser *Parser) previousToken() Token.Token {
 	return parser.tokens[parser.current-1]
 }
 
-func (parser *Parser) parseType() *TS.Type {
+func (parser *Parser) parseType() TS.Type {
 	arrayCount := 0
 
 	for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {

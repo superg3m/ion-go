@@ -54,7 +54,7 @@ func (parser *Parser) parseVariableDeclaration() AST.Declaration {
 	parser.expect(Token.VAR)
 	ident := parser.expect(Token.IDENTIFIER)
 	parser.expect(Token.COLON)
-	var dataType *TS.Type
+	var dataType TS.Type
 	if parser.peekNthToken(0).Kind == Token.EQUALS {
 		parser.expect(Token.EQUALS)
 	} else {

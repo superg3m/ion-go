@@ -1,5 +1,6 @@
 package TS
 
+/*
 import (
 	"ion-go/Token"
 )
@@ -287,3 +288,5 @@ func CanCastType(castType *Type, exprType *Type) bool {
 
 	return false
 }
+
+*/

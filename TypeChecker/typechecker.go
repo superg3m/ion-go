@@ -8,51 +8,51 @@ import (
 
 type StatementTypePair struct {
 	stmt *AST.StatementReturn
-	t    *TS.Type
+	t    TS.Type
 }
 
 var globalFunctions map[string]*AST.DeclarationFunction
 var globalStruct map[string]*AST.DeclarationStruct
 var globalReturnStatementStack []StatementTypePair
 
-func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) *TS.Type {
+func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) TS.Type {
 	functionDeclaration, ok := globalFunctions[v.Tok.Lexeme]
+	functionType := functionDeclaration.DeclType.(*TS.FunctionType)
 	if !ok {
 		panic("undefined function " + v.Tok.Lexeme)
 	}
 
 	argCount := len(v.Arguments)
-	paramCount := len(functionDeclaration.DeclType.Parameters)
+	paramCount := len(functionType.ParamTypes)
 
 	if paramCount != argCount {
 		panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
 	}
 
 	for i := 0; i < argCount; i++ {
-		param := functionDeclaration.DeclType.Parameters[i]
+		paramType := functionType.ParamTypes[i]
 		argType := typeCheckExpression(v.Arguments[i], env)
 
-		if !TS.TypeCompare(param.DeclType, argType) {
-			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, param.DeclType.String(), argType.String()))
+		if !TS.TypeCompare(paramType, argType) {
+			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, paramType.String(), argType.String()))
 		}
 	}
 
-	return functionDeclaration.DeclType.GetReturnType()
+	return functionType.ReturnType
 }
 
-func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
+func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 	switch v := e.(type) {
-	case *AST.ExpressionInteger:
-		return TS.NewType(TS.INTEGER, nil, nil)
-
-	case *AST.ExpressionFloat:
-		return TS.NewType(TS.FLOAT, nil, nil)
-
 	case *AST.ExpressionBoolean:
-		return TS.NewType(TS.BOOL, nil, nil)
-
+		return TS.NewTypeBool()
+	case *AST.ExpressionCharacter:
+		return TS.NewTypeChar(true)
+	case *AST.ExpressionInteger:
+		return TS.NewTypeInteger(true, 4)
+	case *AST.ExpressionFloat:
+		return TS.NewTypeFloat(4)
 	case *AST.ExpressionString:
-		return TS.NewType(TS.STRING, nil, nil)
+		return TS.NewTypeString()
 
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Tok)
@@ -113,7 +113,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			return v.CastType
 		}
 
-		if !TS.CanCastType(v.CastType, exprType) {
+		if !TS.CanExplicitCast(v.CastType, exprType) {
 			panic(fmt.Sprintf("Typechecking error Line %d | Invalid cast to %s from %s", v.Tok.Line, v.CastType.String(), exprType.String()))
 		}
 
@@ -132,6 +132,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, memberCount))
 		}
 
+		var memberTypes []TS.Type
 		for i := 0; i < argCount; i++ {
 			member := structDecl.Members[i]
 			argType := typeCheckExpression(v.MemberValues[member.Tok.Lexeme], env)
@@ -139,9 +140,11 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 			if !TS.TypeCompare(member.DeclType, argType) {
 				panic(fmt.Sprintf("Line %d | argument %d: expected %s: %s, got %s", v.Tok.Line, i, member.Tok.Lexeme, member.DeclType.String(), argType.String()))
 			}
+
+			memberTypes = append(memberTypes, member.DeclType)
 		}
 
-		return TS.NewType(TS.STRUCT, TS.NewType(TS.TypeKind(structDecl.Tok.Lexeme), nil, nil), nil)
+		return TS.NewTypeStruct(structDecl.Tok.Lexeme, memberTypes)
 
 	case *AST.ExpressionAccessChain:
 		ident := env.get(v.Tok)
@@ -167,10 +170,12 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 				if ok {
 					accessString += fmt.Sprintf("[%d]", index.Value)
 				}
+				type_int32 := TS.NewTypeInteger(true, 4)
 
 				identifier, ok := ev.Index.(*AST.ExpressionIdentifier)
 				if ok {
-					if !TS.TypeCompare(typeCheckExpression(identifier, env), TS.NewType(TS.INTEGER, nil, nil)) {
+					// this needs to be compatible not type compare
+					if !TS.TypeCompare(typeCheckExpression(identifier, env), type_int32) {
 						panic("Array Index Access is not of type int")
 					}
 
@@ -179,7 +184,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 
 				acc, ok := ev.Index.(*AST.ExpressionAccessChain)
 				if ok {
-					if !TS.TypeCompare(typeCheckExpression(acc, env), TS.NewType(TS.INTEGER, nil, nil)) {
+					if !TS.TypeCompare(typeCheckExpression(acc, env), type_int32) {
 						panic("Array Index Access is not of type int")
 					}
 
@@ -189,7 +194,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 				cast, ok := ev.Index.(*AST.ExpressionTypeCast)
 				if ok {
 					ct := typeCheckExpression(cast, env)
-					if !TS.TypeCompare(ct, TS.NewType(TS.INTEGER, nil, nil)) {
+					if !TS.TypeCompare(ct, type_int32) {
 						panic("Array Index Access is not of type int")
 					}
 
@@ -197,7 +202,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 				}
 
 				if accessType.IsArray() {
-					accessType = accessType.RemoveArrayModifier()
+					accessType = accessType.RemoveModifier()
 					decl = globalStruct[accessType.String()]
 				} else {
 					panic(fmt.Sprintf("Line: %d | undefined array access: %s", v.Tok.Line, accessString))
@@ -211,7 +216,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) *TS.Type {
 		panic(fmt.Sprintf("undefined statement: %T", v))
 	}
 
-	return TS.NewType(TS.INVALID_TYPE, nil, nil)
+	return nil
 }
 
 func typeCheckStatement(s AST.Statement, env *TypeEnv) {

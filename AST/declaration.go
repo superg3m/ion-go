@@ -12,19 +12,19 @@ type Declaration interface {
 
 type DeclarationVariable struct {
 	Tok      Token.Token
-	DeclType *TS.Type
+	DeclType TS.Type
 	RHS      Expression
 }
 
 type DeclarationFunction struct {
 	Tok      Token.Token
-	DeclType *TS.Type
+	DeclType TS.Type
 	Block    *StatementBlock
 }
 
 type Member struct {
 	Tok      Token.Token
-	DeclType *TS.Type
+	DeclType TS.Type
 }
 
 type DeclarationStruct struct {

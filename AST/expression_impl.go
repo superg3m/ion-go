@@ -1,5 +1,8 @@
 package AST
 
+func (*ExpressionCharacter) isNode()       {}
+func (*ExpressionCharacter) isExpression() {}
+
 func (*ExpressionInteger) isNode()       {}
 func (*ExpressionInteger) isExpression() {}
 

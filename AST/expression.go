@@ -10,6 +10,14 @@ type Expression interface {
 	isExpression()
 }
 
+type ExpressionBoolean struct {
+	Value bool
+}
+
+type ExpressionCharacter struct {
+	Value byte
+}
+
 type ExpressionInteger struct {
 	Value int
 }
@@ -22,10 +30,6 @@ type ExpressionString struct {
 	Value string
 }
 
-type ExpressionBoolean struct {
-	Value bool
-}
-
 type ExpressionIdentifier struct {
 	Tok Token.Token
 }
@@ -36,7 +40,7 @@ type ExpressionGrouping struct {
 
 type ExpressionTypeCast struct {
 	Tok      Token.Token
-	CastType *TS.Type
+	CastType TS.Type
 	Expr     Expression
 }
 
@@ -53,7 +57,7 @@ type ExpressionBinary struct {
 
 type ExpressionArray struct {
 	Elements []Expression
-	DeclType *TS.Type
+	DeclType TS.Type
 }
 
 type ExpressionArrayAccess struct {
