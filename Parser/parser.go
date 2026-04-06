@@ -65,12 +65,22 @@ func (parser *Parser) parseType() TS.Type {
 	var countArray []int
 	for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {
 		parser.consumeOnMatch(Token.LEFT_BRACKET)
-		count := parser.parseExpression().(*AST.ExpressionInteger).Value // this should be like a [4]int
-		countArray = append(countArray, count)
+
+		if count, ok := parser.parseExpression().(*AST.ExpressionInteger); ok {
+			countArray = append(countArray, count.Value)
+		} else {
+			countArray = append(countArray, 0) // this makes it a inferred size array,
+			// very hacky not good, but what are you gonna do, sometimes you just gotta do the thing.
+		}
 		parser.consumeOnMatch(Token.RIGHT_BRACKET)
 	}
 
-	// TODO(Jovanni): handle pointer parsing here
+	pointerDepth := 0
+	for parser.peekNthToken(0).Kind == Token.STAR {
+		parser.consumeOnMatch(Token.STAR)
+
+		pointerDepth += 1
+	}
 
 	next := parser.peekNthToken(0)
 	if next.Kind != Token.IDENTIFIER {
@@ -85,6 +95,10 @@ func (parser *Parser) parseType() TS.Type {
 		retType = TS.NewTypeStruct(dataTypeToken.Lexeme, structDecl.Members)
 	} else {
 		parser.reportError(fmt.Sprintf("Line: %d, Unrecognized type: %s", dataTypeToken.Line, dataTypeToken.Lexeme))
+	}
+
+	for i := 0; i < pointerDepth; i++ {
+		retType = TS.AddPointer(retType)
 	}
 
 	for _, count := range countArray {

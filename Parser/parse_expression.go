@@ -225,6 +225,10 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 		}
 	}
 
+	if declType.IsInferredSizeArray() {
+		declType.(*TS.StaticArrayType).Count = len(elements)
+	}
+
 	return &AST.ExpressionArray{
 		Elements: elements,
 		DeclType: declType,

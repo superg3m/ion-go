@@ -7,16 +7,18 @@ import (
 	"unsafe"
 )
 
-func (b *BaseType) isType()          {}
-func (b *BaseType) String() string   { return "BaseType" }
-func (b *BaseType) Underlying() Type { return b.underlying }
-func (b *BaseType) Size() int        { return 0 }
-func (b *BaseType) IsInteger() bool  { return false }
-func (b *BaseType) IsString() bool   { return false }
-func (b *BaseType) IsStruct() bool   { return false }
-func (b *BaseType) IsPointer() bool  { return false }
-func (b *BaseType) IsArray() bool    { return false }
-func (b *BaseType) IsFloat() bool    { return false }
+func (b *BaseType) isType()                   {}
+func (b *BaseType) String() string            { return "BaseType" }
+func (b *BaseType) Underlying() Type          { return b.underlying }
+func (b *BaseType) Size() int                 { return 0 }
+func (b *BaseType) IsInteger() bool           { return false }
+func (b *BaseType) IsString() bool            { return false }
+func (b *BaseType) IsStruct() bool            { return false }
+func (b *BaseType) IsPointer() bool           { return false }
+func (b *BaseType) IsArray() bool             { return false }
+func (b *BaseType) IsFixedSizeArray() bool    { return false }
+func (b *BaseType) IsInferredSizeArray() bool { return false }
+func (b *BaseType) IsFloat() bool             { return false }
 
 func (b *BaseType) IsFunction() bool { return false }
 func AddAlias(t Type, strict bool, name string) Type {
@@ -184,8 +186,10 @@ func (f *FunctionType) String() string {
 	return ret
 }
 
-func (arr *StaticArrayType) isType()       {}
-func (arr *StaticArrayType) IsArray() bool { return true }
+func (arr *StaticArrayType) isType()                   {}
+func (arr *StaticArrayType) IsArray() bool             { return true }
+func (arr *StaticArrayType) IsFixedSizeArray() bool    { return arr.Count > 0 }
+func (arr *StaticArrayType) IsInferredSizeArray() bool { return arr.Count == 0 }
 func (arr *StaticArrayType) Size() int {
 	return arr.Underlying().Size() * arr.Count
 }
@@ -298,30 +302,31 @@ func getFirstNonTypeAlias(t Type) Type {
 	return c
 }
 
-func TypeEqual(t1 Type, t2 Type) bool {
+func typeEqual(t1 Type, t2 Type) bool {
 	return reflect.TypeOf(t1) == reflect.TypeOf(t2)
 }
 
+// TypeCompare This is a structural + strict equivalence
 func TypeCompare(t1 Type, t2 Type) bool {
 	for {
-		st := getFirstStrictAlias(t1)
-		st2 := getFirstStrictAlias(t2)
+		strictAlias1 := getFirstStrictAlias(t1)
+		strictAlias2 := getFirstStrictAlias(t2)
 
-		if (st == nil) || (st2 == nil) {
+		if (strictAlias1 == nil) || (strictAlias2 == nil) {
 			break
 		}
 
-		if st.(*AliasType).AliasName != st2.(*AliasType).AliasName {
+		if strictAlias1.(*AliasType).AliasName != strictAlias2.(*AliasType).AliasName {
 			return false
 		}
 
-		t1 = st.Underlying()
-		t2 = st2.Underlying()
+		t1 = strictAlias1.Underlying()
+		t2 = strictAlias2.Underlying()
 	}
 
 	t1 = getFirstNonTypeAlias(t1)
 	t2 = getFirstNonTypeAlias(t2)
-	if !TypeEqual(t1, t2) {
+	if !typeEqual(t1, t2) {
 		return false
 	}
 
@@ -334,7 +339,11 @@ func TypeCompare(t1 Type, t2 Type) bool {
 		return v1.Bytes == v2.Bytes
 	case *PointerType:
 		return TypeCompare(t1.Underlying(), t2.Underlying())
+	case *StaticArrayType:
+		v2 := t2.(*StaticArrayType)
+		return (v1.Count == v2.Count) && TypeCompare(t1.Underlying(), t2.Underlying())
 	case *StructType:
+		// This is a structural equivalence
 		v2 := t2.(*StructType)
 		if len(v1.Members) != len(v2.Members) {
 			return false
@@ -371,21 +380,66 @@ func TypeCompare(t1 Type, t2 Type) bool {
 	return true
 }
 
-func CanExplicitCast(caster Type, castee Type) bool {
+// CanImplicitCast Does NOT take structural equivalence into account
+func TypeCompatible(t1 Type, t2 Type) bool {
 	for {
-		st := getFirstStrictAlias(caster)
-		st2 := getFirstStrictAlias(castee)
+		strictAlias1 := getFirstStrictAlias(t1)
+		strictAlias2 := getFirstStrictAlias(t2)
 
-		if (st == nil) || (st2 == nil) {
+		if (strictAlias1 == nil) || (strictAlias2 == nil) {
 			break
 		}
 
-		if st.(*AliasType).AliasName != st2.(*AliasType).AliasName {
+		if strictAlias1.(*AliasType).AliasName != strictAlias2.(*AliasType).AliasName {
 			return false
 		}
 
-		caster = st.Underlying()
-		castee = st2.Underlying()
+		t1 = strictAlias1.Underlying()
+		t2 = strictAlias2.Underlying()
+	}
+
+	t1 = getFirstNonTypeAlias(t1)
+	t2 = getFirstNonTypeAlias(t2)
+	if !typeEqual(t1, t2) {
+		return false
+	}
+
+	switch v1 := t1.(type) {
+	case *IntegerType:
+		v2 := t2.(*IntegerType)
+		return v1.Signed == v2.Signed
+	case *FloatType:
+		return true
+	case *PointerType:
+		return TypeCompatible(t1.Underlying(), t2.Underlying())
+	case *StructType:
+		return TypeCompare(t1, t2)
+	case *StaticArrayType:
+		v2 := t2.(*StaticArrayType)
+		countCheck := (v1.IsInferredSizeArray() || v2.IsInferredSizeArray()) || (v1.Count == v2.Count)
+		return countCheck && TypeCompare(t1.Underlying(), t2.Underlying())
+	default:
+		panic(fmt.Sprintf("TypeCompatible: unknown type %T", t1))
+	}
+
+	return true
+}
+
+func CanExplicitCast(caster Type, castee Type) bool {
+	for {
+		strictAlias1 := getFirstStrictAlias(caster)
+		strictAlias2 := getFirstStrictAlias(castee)
+
+		if (strictAlias1 == nil) || (strictAlias2 == nil) {
+			break
+		}
+
+		if strictAlias1.(*AliasType).AliasName != strictAlias2.(*AliasType).AliasName {
+			return false
+		}
+
+		caster = strictAlias1.Underlying()
+		castee = strictAlias2.Underlying()
 	}
 
 	{
@@ -461,11 +515,66 @@ func GetBuiltin(s string) (Type, bool) {
 	return ret, ok
 }
 
-/*
-func CanImplicitCast() bool {
-	return true
+func CanDereference(t Type) bool {
+	p, isPointer := t.(*PointerType)
+	if isPointer {
+		_, isVoidPointer := p.Underlying().(*VoidType)
+		return !isVoidPointer
+	}
+
+	return false
 }
-*/
+
+// CanImplicitCast Does NOT take structural equivalence into account
+func CanImplicitCast(caster Type, castee Type) bool {
+	for {
+		strictAlias1 := getFirstStrictAlias(caster)
+		strictAlias2 := getFirstStrictAlias(castee)
+
+		if (strictAlias1 == nil) || (strictAlias2 == nil) {
+			break
+		}
+
+		if strictAlias1.(*AliasType).AliasName != strictAlias2.(*AliasType).AliasName {
+			return false
+		}
+
+		caster = strictAlias1.Underlying()
+		castee = strictAlias2.Underlying()
+	}
+
+	{
+		_, isCasterPointer := caster.(*PointerType)
+		if isCasterPointer {
+			_, isCasterVoidPointer := caster.Underlying().(*PointerType)
+			_, isCasteePointer := castee.(*PointerType)
+			if isCasterVoidPointer && isCasteePointer {
+				return true
+			}
+		}
+	}
+
+	a1, isCasterArray := caster.(*StaticArrayType)
+	a2, isCasteeArray := castee.(*StaticArrayType)
+	if isCasterArray && isCasteeArray {
+		return a1.IsInferredSizeArray() || a2.IsInferredSizeArray()
+	}
+
+	s1, isCasterStruct := caster.(*StructType)
+	s2, isCasteeStruct := castee.(*StructType)
+	if isCasterStruct && isCasteeStruct {
+		return s1.StructName == s2.StructName
+	}
+
+	// if castee is a IntegerType or a FloatingType
+	// and the caster is a Integer Type or Floating Type
+
+	// this case is like if its a parameter
+	// f(a: u64)
+	// CanImplicitCast(param.DeclType, argument.DeclType, argument.Expr)
+
+	return TypeCompatible(caster, castee)
+}
 
 type TypeKind int
 

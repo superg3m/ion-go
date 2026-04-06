@@ -31,6 +31,8 @@ type Type interface {
 	IsStruct() bool
 	IsPointer() bool
 	IsArray() bool
+	IsFixedSizeArray() bool
+	IsInferredSizeArray() bool
 	IsString() bool
 	IsInteger() bool
 	IsFloat() bool

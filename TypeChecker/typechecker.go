@@ -32,9 +32,10 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) TS.Type {
 
 	for i := 0; i < argCount; i++ {
 		param := functionType.Params[i]
-		argType := typeCheckExpression(v.Arguments[i], env)
+		arg := v.Arguments[i]
+		argType := typeCheckExpression(arg, env)
 
-		if !TS.TypeCompare(param.DeclType, argType) {
+		if !TS.CanImplicitCast(param.DeclType, argType) {
 			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, param.DeclType.String(), argType.String()))
 		}
 	}
@@ -79,7 +80,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 			}
 
 			elementType := typeCheckExpression(element, env)
-			if !TS.TypeCompare(elementType, TS.RemoveModifier(v.DeclType)) {
+			if !TS.TypeCompatible(elementType, TS.RemoveModifier(v.DeclType)) {
 				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, TS.RemoveModifier(v.DeclType).String(), elementType.String()))
 			}
 		}
@@ -110,7 +111,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 
 	case *AST.ExpressionTypeCast:
 		exprType := typeCheckExpression(v.Expr, env)
-		if TS.TypeCompare(v.CastType, exprType) {
+		if TS.TypeCompare(v.CastType, exprType) { // probably can remove this
 			return v.CastType
 		}
 
