@@ -1,0 +1,10 @@
+fn add(x: f64, y: f64) -> f64 {
+    return x + y;
+}
+
+fn main() -> void {
+    var a: s32 = 5;
+    var b: f32 = 2.5;
+    var r := add(a, b); // both widened to f64
+    println(r);
+}

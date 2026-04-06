@@ -35,8 +35,8 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) TS.Type {
 		arg := v.Arguments[i]
 		argType := typeCheckExpression(arg, env)
 
-		if !TS.CanImplicitCast(param.DeclType, argType) {
-			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, param.DeclType.String(), argType.String()))
+		if canCast, err := TS.CanImplicitCast(param.DeclType, argType); !canCast {
+			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s | %s", v.Tok.Line, i, param.DeclType.String(), argType.String(), err.Error()))
 		}
 	}
 
@@ -80,8 +80,8 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 			}
 
 			elementType := typeCheckExpression(element, env)
-			if !TS.TypeCompatible(elementType, TS.RemoveModifier(v.DeclType)) {
-				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, TS.RemoveModifier(v.DeclType).String(), elementType.String()))
+			if compat, err := TS.TypeSafeStructurallyStrictCompatible(elementType, TS.RemoveModifier(v.DeclType)); !compat {
+				panic(fmt.Sprintf("Element %d: expected %s, got %s | %s", i, TS.RemoveModifier(v.DeclType).String(), elementType.String(), err.Error()))
 			}
 		}
 
@@ -111,12 +111,12 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 
 	case *AST.ExpressionTypeCast:
 		exprType := typeCheckExpression(v.Expr, env)
-		if TS.TypeCompare(v.CastType, exprType) { // probably can remove this
+		if ok, _ := TS.TypeCompare(v.CastType, exprType); ok { // probably can remove this
 			return v.CastType
 		}
 
-		if !TS.CanExplicitCast(v.CastType, exprType) {
-			panic(fmt.Sprintf("Typechecking error Line %d | Invalid cast to %s from %s", v.Tok.Line, v.CastType.String(), exprType.String()))
+		if ok, err := TS.CanExplicitCast(v.CastType, exprType); !ok {
+			panic(fmt.Sprintf("Typechecking error Line %d | Invalid cast to %s from %s | %s", v.Tok.Line, v.CastType.String(), exprType.String(), err.Error()))
 		}
 
 		return v.CastType
@@ -139,8 +139,8 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 			member := structDecl.Members[i]
 			argType := typeCheckExpression(v.MemberValues[member.Tok.Lexeme], env)
 
-			if !TS.TypeCompare(member.DeclType, argType) {
-				panic(fmt.Sprintf("Line %d | argument %d: expected %s: %s, got %s", v.Tok.Line, i, member.Tok.Lexeme, member.DeclType.String(), argType.String()))
+			if comp, err := TS.TypeCompare(member.DeclType, argType); !comp {
+				panic(fmt.Sprintf("Line %d | argument %d: expected %s: %s, got %s | %s", v.Tok.Line, i, member.Tok.Lexeme, member.DeclType.String(), argType.String(), err.Error()))
 			}
 
 			memberTypes = append(memberTypes, member.DeclType)
@@ -177,7 +177,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 				identifier, ok := ev.Index.(*AST.ExpressionIdentifier)
 				if ok {
 					// this needs to be compatible not type compare
-					if !TS.TypeCompare(typeCheckExpression(identifier, env), type_int32) {
+					if comp, _ := TS.TypeCompare(typeCheckExpression(identifier, env), type_int32); !comp {
 						panic("Array Index Access is not of type int")
 					}
 
@@ -186,7 +186,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 
 				acc, ok := ev.Index.(*AST.ExpressionAccessChain)
 				if ok {
-					if !TS.TypeCompare(typeCheckExpression(acc, env), type_int32) {
+					if comp, _ := TS.TypeCompare(typeCheckExpression(acc, env), type_int32); !comp {
 						panic("Array Index Access is not of type int")
 					}
 
@@ -196,7 +196,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 				cast, ok := ev.Index.(*AST.ExpressionTypeCast)
 				if ok {
 					ct := typeCheckExpression(cast, env)
-					if !TS.TypeCompare(ct, type_int32) {
+					if comp, _ := TS.TypeCompare(ct, type_int32); !comp {
 						panic("Array Index Access is not of type int")
 					}
 
@@ -227,8 +227,8 @@ func typeCheckStatement(s AST.Statement, env *TypeEnv) {
 		lhsType := typeCheckExpression(v.LHS, env)
 		rhsType := typeCheckExpression(v.RHS, env)
 
-		if !TS.TypeCompare(lhsType, rhsType) {
-			panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), lhsType.String()))
+		if comp, err := TS.TypeCompare(lhsType, rhsType); !comp {
+			panic(fmt.Sprintf("Line %d | Can't assign type %s to type %s | %s", v.Tok.Line, rhsType.String(), lhsType.String(), err.Error()))
 		}
 
 	case *AST.StatementPrint:
@@ -314,8 +314,8 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 		env.set(v.Tok, v)
 
-		if !TS.TypeCompare(v.DeclType, rhsType) {
-			panic(fmt.Sprintf("Line: %d | Can't assign type %s to type %s", v.Tok.Line, rhsType.String(), v.DeclType.String()))
+		if comp, err := TS.CanImplicitCast(v.DeclType, rhsType); !comp {
+			panic(fmt.Sprintf("Line: %d | Can't assign type %s to type %s | %s", v.Tok.Line, rhsType.String(), v.DeclType.String(), err.Error()))
 		}
 
 	case *AST.DeclarationFunction:
@@ -351,8 +351,8 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 					panic(fmt.Sprintf("Attempting to return expression in %s() with return type void", v.Tok.Lexeme))
 				}
 
-				if !TS.TypeCompare(returnType, pair.t) {
-					panic(fmt.Sprintf("Line %d | %s() has a return type of %s but returns a %s", pair.stmt.Tok.Line, v.Tok.Lexeme, returnType.String(), pair.t.String()))
+				if comp, err := TS.TypeCompare(returnType, pair.t); !comp {
+					panic(fmt.Sprintf("Line %d | %s() has a return type of %s but returns a %s | %s", pair.stmt.Tok.Line, v.Tok.Lexeme, returnType.String(), pair.t.String(), err.Error()))
 				}
 			}
 			globalReturnStatementStack = nil

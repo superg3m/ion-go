@@ -1,0 +1,8 @@
+fn main() -> void {
+    var s: string = "hello";
+    var n: s32 = s; // should fail: string→s32
+    var t: string = s + " world"; // concat: supported?
+    var u: f32 = cast(f32)s; // should fail: can't cast string to numeric
+    println(s);
+    println(t);
+}

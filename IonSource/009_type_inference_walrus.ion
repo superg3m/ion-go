@@ -1,0 +1,10 @@
+fn main() -> void {
+    var a := 42;      // s32?
+    var b := 3.14;    // f64?
+    var c := true;    // bool?
+    var d := "hello"; // string?
+    var e := a + b;   // f64 after widening?
+    println(a);
+    println(b);
+    println(e);
+}

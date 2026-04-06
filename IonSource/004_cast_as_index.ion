@@ -1,0 +1,6 @@
+fn main() -> void {
+    var arr := [4]f32.[1.0, 2.0, 3.0, 4.0];
+    var f: f32 = 2.0;
+    arr[cast(s32)f] = 99.0; // cast float index to s32
+    println(arr);
+}

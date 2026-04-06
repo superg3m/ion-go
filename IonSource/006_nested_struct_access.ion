@@ -1,0 +1,11 @@
+struct Inner { val: f32 }
+struct Outer { inner: Inner, id: s32 }
+
+fn main() -> void {
+    var o: Outer = Outer.{Inner.{3.14}, 7};
+    println(o.inner.val);
+    o.inner.val = 2.71;
+    println(o.inner.val);
+    o.id = o.id + 1;
+    println(o.id);
+}

@@ -1,0 +1,8 @@
+struct Mat2 { rows: [2]f32 }
+
+fn main() -> void {
+    var m: Mat2 = Mat2.{[2]f32.[1.0, 2.0]};
+    println(m.rows[0]);
+    m.rows[1] = 9.9;
+    println(m.rows[1]);
+}

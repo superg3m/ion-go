@@ -1,0 +1,7 @@
+fn main() -> void {
+    var a: f32 = 3.99;
+    var b: s32 = cast(s32)a; // truncates to 3
+    var c: s8  = cast(s8)b;  // truncates to 3
+    println(b);
+    println(c);
+}

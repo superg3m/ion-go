@@ -1,0 +1,12 @@
+fn get_int() -> s32 {
+    return 3.14; // f64 → s32: should fail without explicit cast
+}
+
+fn get_float() -> f32 {
+    var x: s32 = 10;
+    return x; // implicit widen to f32: should this be allowed?
+}
+
+fn main() -> void {
+    println(get_float());
+}

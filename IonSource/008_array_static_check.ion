@@ -1,0 +1,6 @@
+fn main() -> void {
+    var a := [3]s32.[1, 2, 3];
+    var b: [3]s32 = [2]s32.[1, 2]; // size mismatch: should fail
+    var c: [3]f32 = [3]s32.[1, 2, 3]; // elem type mismatch
+    println(a);
+}

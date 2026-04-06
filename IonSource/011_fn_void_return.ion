@@ -1,0 +1,11 @@
+fn nothing() -> void {
+    return 1; // should fail: value in void return
+}
+
+fn get_val() -> s32 {
+    return; // should fail: missing value
+}
+
+fn main() -> void {
+    nothing();
+}

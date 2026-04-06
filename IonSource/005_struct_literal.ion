@@ -1,0 +1,10 @@
+struct Vec2 {
+    x: f32,
+    y: f32
+}
+
+fn main() -> void {
+    var v: Vec2 = Vec2.{1.0, 2}; // 2 should widen to f32
+    var bad: Vec2 = Vec2.{"hi", 1.0}; // should fail: string→f32
+    println(v);
+}
