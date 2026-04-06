@@ -1,4 +1,4 @@
-fn factorial(x: u32) -> u32 {
+fn factorial(x: s32) -> s32 {
     if (x == 0) {
         return 1;
     }
@@ -8,6 +8,6 @@ fn factorial(x: u32) -> u32 {
 
 fn main() -> void {
     defer println(factorial(10));
-    var x: u32 = factorial(5);
+    var x := factorial(5);
     println(x);
 }

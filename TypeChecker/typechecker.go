@@ -53,24 +53,20 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 		return TS.NewTypeFloat(4)
 	case *AST.ExpressionString:
 		return TS.NewTypeString()
-
 	case *AST.ExpressionIdentifier:
 		decl := env.get(v.Tok)
 		return decl.DeclType
 
 	case *AST.ExpressionBinary:
-		// lt := typeCheckExpression(v.Left, env)
-		// rt := typeCheckExpression(v.Right, env)
+		lt := typeCheckExpression(v.Left, env)
+		rt := typeCheckExpression(v.Right, env)
 
-		/*
-			promotedType := TS.GetPromotedType(v.Operator, lt, rt)
-			if promotedType == TS.INVALID_TYPE {
-				panic(fmt.Sprintf("Typechecking error Line %d | Operation %s not supported on Left: %s | Right: %s", v.Operator.Line, v.Operator.Lexeme, lt.String(), rt.String()))
-			}
+		promotedType := TS.GetPromotedType(v.Operator, lt, rt)
+		if promotedType == nil {
+			panic(fmt.Sprintf("Typechecking error Line %d | Operation %s not supported on Left: %s | Right: %s", v.Operator.Line, v.Operator.Lexeme, lt.String(), rt.String()))
+		}
 
-			return TS.NewType(promotedType, nil, nil)
-		*/
-		panic("NOT HANDLED BINARY_EXPRESSION YET!")
+		return promotedType
 
 	case *AST.SE_FunctionCall:
 		return typeCheckFunctionCall(v, env)

@@ -102,12 +102,12 @@ func (b *BaseType) RemoveModifier() Type {
 
 func (v *VoidType) isType() {}
 func (v *VoidType) String() string {
-	return string(TYPE_VOID)
+	return "void"
 }
 
 func (b *BoolType) isType()        {}
 func (b *BoolType) Size() int      { return 1 }
-func (b *BoolType) String() string { return TYPE_BOOL }
+func (b *BoolType) String() string { return "bool" }
 
 func (c *CharType) isType()   {}
 func (c *CharType) Size() int { return 1 }
@@ -117,7 +117,7 @@ func (c *CharType) String() string {
 		u = ""
 	}
 
-	return fmt.Sprintf(TYPE_CHAR, u)
+	return fmt.Sprintf("%schar", u)
 }
 
 func (i *IntegerType) isType()         {}
@@ -129,14 +129,14 @@ func (i *IntegerType) String() string {
 		c = "s"
 	}
 
-	return fmt.Sprintf(TYPE_INTEGER, c, i.Bytes*8)
+	return fmt.Sprintf("%s%d", c, i.Bytes*8)
 }
 
 func (f *FloatType) isType()       {}
 func (f *FloatType) Size() int     { return f.Bytes }
 func (f *FloatType) IsFloat() bool { return true }
 func (f *FloatType) String() string {
-	return fmt.Sprintf(TYPE_FLOATING, f.Bytes*8)
+	return fmt.Sprintf("f%d", f.Bytes*8)
 }
 
 func (s *StructType) isType()        {}
@@ -186,7 +186,7 @@ func (arr *StaticArrayType) Size() int {
 	return arr.Underlying().Size() * arr.Count
 }
 func (arr *StaticArrayType) String() string {
-	return fmt.Sprintf(TYPE_STATIC_ARRAY, arr.Count) + arr.Underlying().String()
+	return fmt.Sprintf("[%d]", arr.Count) + arr.Underlying().String()
 }
 
 func (p *PointerType) isType()         {}
@@ -196,7 +196,7 @@ func (p *PointerType) Size() int {
 	return int(unsafe.Sizeof(t))
 }
 func (p *PointerType) String() string {
-	return TYPE_POINTER + p.Underlying().String()
+	return "*" + p.Underlying().String()
 }
 
 func NewTypeVoid() Type {
@@ -444,54 +444,103 @@ func CanImplicitCast() bool {
 }
 */
 
-/*
-struct BinaryQuery {
-TypeKind left;
-const char* op;
-TypeKind right;
+type TypeKind int
 
-bool operator==(BinaryQuery other) const {
-return (left == other.left) && str_equal(this->op, other.op) && (right == other.right);
-}
-};
+const (
+	INVALID TypeKind = iota
 
-BinaryQuery binary_query_create(TypeKind left, const char* op, TypeKind right) {
-BinaryQuery ret = {};
-ret.left = left;
-ret.op = op;
-ret.right = right;
+	INTEGER
+	FLOAT
+	BOOL
+	STRING
+)
 
-return ret;
+type BinaryQuery struct {
+	Op    string
+	Left  TypeKind
+	Right TypeKind
 }
 
-#define X_ARITHMITIC_OPERATORS \
-X("+")                     \
-X("-")                     \
-X("*")                     \
-X("/")                     \
-X("<")                     \
-X("<=")                    \
-X(">")                     \
-X(">=")                    \
+func getTypeKind(t Type) TypeKind {
+	switch v := t.(type) {
+	case *IntegerType:
+		return INTEGER
+	case *FloatType:
+		return FLOAT
+	case *PointerType:
+		return BOOL
+	case *StructType:
+		if v.IsString() {
+			return STRING
+		}
+	}
 
-bool type_can_perform_binary_op(TypeKind t1, const char* op, TypeKind t2) {
-LOCAL_PERSIST Hashmap<BinaryQuery, bool> binary_query_map = hashmap_create<BinaryQuery, bool>(allocator_general(), {
-#define X(ENUM, STR, SIZE) {binary_query_create(ENUM, "==", ENUM), true}, {binary_query_create(ENUM, "!=", ENUM), true},
-X_TYPE_BUILTIN
-#undef X
-
-#define X(OP) {binary_query_create(TYPE_INTEGER, OP, TYPE_INTEGER), true}, {binary_query_create(TYPE_INTEGER, OP, TYPE_FLOATING), true}, {binary_query_create(TYPE_FLOATING, OP, TYPE_FLOATING), true}, {binary_query_create(TYPE_INTEGER, OP, TYPE_FLOATING), true},
-X_ARITHMITIC_OPERATORS
-#undef X
-
-{binary_query_create(TYPE_POINTER, "+", TYPE_INTEGER), true},
-{binary_query_create(TYPE_POINTER, "-", TYPE_INTEGER), true},
-});
-
-// NOTE(Jovanni): This is because I don't want to have to specify like pointer + u8 and u8 + pointer
-BinaryQuery q1 = binary_query_create(t1, op, t2);
-BinaryQuery q2 = binary_query_create(t2, op, t1);
-return hashmap_has(&binary_query_map, q1) || hashmap_has(&binary_query_map, q2);
+	return INVALID
 }
 
-*/
+// GetPromotedType This is strictly for binary operations
+func GetPromotedType(op Token.Token, leftType Type, rightType Type) Type {
+	typeS32 := NewTypeInteger(true, 4)
+	typeF32 := NewTypeFloat(4)
+	typeString := NewTypeString()
+	typeBool := NewTypeBool()
+
+	var typeMap = map[BinaryQuery]Type{
+		{"+", INTEGER, FLOAT}:   typeF32,
+		{"-", INTEGER, FLOAT}:   typeF32,
+		{"*", INTEGER, FLOAT}:   typeF32,
+		{"/", INTEGER, FLOAT}:   typeF32,
+		{"%", INTEGER, INTEGER}: typeS32,
+
+		{"+", STRING, STRING}:  typeString,
+		{"+", STRING, INTEGER}: typeString,
+		{"+", STRING, FLOAT}:   typeString,
+
+		{"||", BOOL, BOOL}: typeBool,
+		{"&&", BOOL, BOOL}: typeBool,
+	}
+
+	arithmeticOperators := []string{"+", "-", "*", "/"}
+	for _, operator := range arithmeticOperators {
+		typeMap[BinaryQuery{operator, INTEGER, INTEGER}] = typeS32
+		typeMap[BinaryQuery{operator, FLOAT, FLOAT}] = typeF32
+	}
+
+	comparisonOperators := []string{"<", "<=", ">", ">="}
+	for _, operator := range comparisonOperators {
+		typeMap[BinaryQuery{operator, INTEGER, INTEGER}] = typeBool
+		typeMap[BinaryQuery{operator, FLOAT, FLOAT}] = typeBool
+	}
+
+	equalityOperators := []string{"==", "!="}
+	for _, operator := range equalityOperators {
+		typeMap[BinaryQuery{operator, INTEGER, INTEGER}] = typeBool
+		typeMap[BinaryQuery{operator, FLOAT, FLOAT}] = typeBool
+		typeMap[BinaryQuery{operator, STRING, STRING}] = typeBool
+		typeMap[BinaryQuery{operator, BOOL, BOOL}] = typeBool
+	}
+
+	leftTypeKind := getTypeKind(leftType)
+	if leftTypeKind == INVALID {
+		panic("invalid left type")
+	}
+
+	rightTypeKind := getTypeKind(rightType)
+	if rightTypeKind == INVALID {
+		panic("invalid right type")
+	}
+
+	// NOTE(Jovanni): This is because I don't want to have to specify like pointer + u8 and u8 + pointer
+	q1 := BinaryQuery{op.Lexeme, leftTypeKind, rightTypeKind}
+	q2 := BinaryQuery{op.Lexeme, rightTypeKind, leftTypeKind}
+
+	if ret, ok := typeMap[q1]; ok {
+		return ret
+	}
+
+	if ret, ok := typeMap[q2]; ok {
+		return ret
+	}
+
+	return nil
+}

@@ -4,18 +4,6 @@ import (
 	"ion-go/Token"
 )
 
-const (
-	TYPE_VOID = "void"
-	TYPE_BOOL = "bool"
-	TYPE_CHAR = "%schar"
-
-	TYPE_INTEGER  = "%s%d"
-	TYPE_FLOATING = "f%d"
-
-	TYPE_STATIC_ARRAY = "[%d]"
-	TYPE_POINTER      = "*"
-)
-
 /*
 // These are just structs now that I think about it:
 	TYPE_STRING       = "String"
