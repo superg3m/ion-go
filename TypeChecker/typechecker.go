@@ -23,18 +23,18 @@ func typeCheckFunctionCall(v *AST.SE_FunctionCall, env *TypeEnv) TS.Type {
 	}
 
 	argCount := len(v.Arguments)
-	paramCount := len(functionType.ParamTypes)
+	paramCount := len(functionType.Params)
 
 	if paramCount != argCount {
 		panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
 	}
 
 	for i := 0; i < argCount; i++ {
-		paramType := functionType.ParamTypes[i]
+		param := functionType.Params[i]
 		argType := typeCheckExpression(v.Arguments[i], env)
 
-		if !TS.TypeCompare(paramType, argType) {
-			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, paramType.String(), argType.String()))
+		if !TS.TypeCompare(param.DeclType, argType) {
+			panic(fmt.Sprintf("Line %d | argument %d: expected %s, got %s", v.Tok.Line, i, param.DeclType.String(), argType.String()))
 		}
 	}
 
@@ -59,15 +59,18 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 		return decl.DeclType
 
 	case *AST.ExpressionBinary:
-		lt := typeCheckExpression(v.Left, env)
-		rt := typeCheckExpression(v.Right, env)
+		// lt := typeCheckExpression(v.Left, env)
+		// rt := typeCheckExpression(v.Right, env)
 
-		promotedType := TS.GetPromotedType(v.Operator, lt, rt)
-		if promotedType == TS.INVALID_TYPE {
-			panic(fmt.Sprintf("Typechecking error Line %d | Operation %s not supported on Left: %s | Right: %s", v.Operator.Line, v.Operator.Lexeme, lt.String(), rt.String()))
-		}
+		/*
+			promotedType := TS.GetPromotedType(v.Operator, lt, rt)
+			if promotedType == TS.INVALID_TYPE {
+				panic(fmt.Sprintf("Typechecking error Line %d | Operation %s not supported on Left: %s | Right: %s", v.Operator.Line, v.Operator.Lexeme, lt.String(), rt.String()))
+			}
 
-		return TS.NewType(promotedType, nil, nil)
+			return TS.NewType(promotedType, nil, nil)
+		*/
+		panic("NOT HANDLED BINARY_EXPRESSION YET!")
 
 	case *AST.SE_FunctionCall:
 		return typeCheckFunctionCall(v, env)
@@ -75,12 +78,12 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 	case *AST.ExpressionArray:
 		for i, element := range v.Elements {
 			if ref, ok := element.(*AST.ExpressionArray); ok {
-				ref.DeclType = v.DeclType.RemoveArrayModifier()
+				ref.DeclType = v.DeclType.RemoveModifier()
 			}
 
 			elementType := typeCheckExpression(element, env)
-			if !TS.TypeCompare(elementType, v.DeclType.RemoveArrayModifier()) {
-				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, v.DeclType.RemoveArrayModifier().String(), elementType.String()))
+			if !TS.TypeCompare(elementType, v.DeclType.RemoveModifier()) {
+				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, v.DeclType.RemoveModifier().String(), elementType.String()))
 			}
 		}
 
@@ -91,15 +94,16 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 		case *AST.ExpressionArray:
 		case *AST.ExpressionString:
 		case *AST.ExpressionIdentifier:
-			evType := env.get(ev.Tok)
-			if evType.DeclType.Kind != TS.ARRAY && evType.DeclType.Kind != TS.STRING {
-				panic(fmt.Sprintf("Builtin Len() argument is not iterable"))
+			evType := typeCheckExpression(ev, env)
+
+			if _, ok := evType.(AST.Iterable); !ok {
+				panic(fmt.Sprintf("Typechecking error line %d | Builtin Len(%s) identifier: %s %s argument is not iterable", ev.Tok.Line, ev.Tok.Lexeme, ev.Tok.Lexeme, evType.String()))
 			}
 		default:
-			panic(fmt.Sprintf("Builtin Len() argument is not iterable %T", v.Iterable))
+			panic(fmt.Sprintf("Typechecking error Line %d | Builtin Len() argument is not iterable %T", v.Iterable))
 		}
 
-		return TS.NewType(TS.INTEGER, nil, nil)
+		return TS.NewTypeInteger(true, 4)
 
 	case *AST.ExpressionUnary:
 		return typeCheckExpression(v.Operand, env)
@@ -144,7 +148,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 			memberTypes = append(memberTypes, member.DeclType)
 		}
 
-		return TS.NewTypeStruct(structDecl.Tok.Lexeme, memberTypes)
+		return TS.NewTypeStruct(structDecl.Tok.Lexeme, structDecl.Members)
 
 	case *AST.ExpressionAccessChain:
 		ident := env.get(v.Tok)
@@ -318,7 +322,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 
 	case *AST.DeclarationFunction:
 		functionType := v.DeclType.(*TS.FunctionType)
-		
+
 		if _, ok := globalFunctions[v.Tok.Lexeme]; ok {
 			panic("Attempting to redeclare function " + v.Tok.Lexeme)
 		} else {
@@ -334,10 +338,10 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 		}
 
 		funcEnv := NewTypeEnv(env)
-		for _, paramType := range functionType.ParamTypes {
+		for _, param := range functionType.Params {
 			funcEnv.set(param.Tok, &AST.DeclarationVariable{
 				Tok:      param.Tok,
-				DeclType: paramType,
+				DeclType: param.DeclType,
 				RHS:      nil,
 			})
 		}
@@ -350,7 +354,7 @@ func typeCheckDeclaration(decl AST.Declaration, env *TypeEnv) {
 				}
 
 				if !TS.TypeCompare(returnType, pair.t) {
-					panic(fmt.Sprintf("Line %d | %s() has a return type of %s but returns a %s", pair.stmt.Tok.Line, v.Tok.Lexeme, v.DeclType.GetReturnType().String(), pair.t.String()))
+					panic(fmt.Sprintf("Line %d | %s() has a return type of %s but returns a %s", pair.stmt.Tok.Line, v.Tok.Lexeme, returnType.String(), pair.t.String()))
 				}
 			}
 			globalReturnStatementStack = nil

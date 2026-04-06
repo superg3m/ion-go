@@ -12,8 +12,9 @@ func (*ExpressionFloat) isExpression() {}
 func (*ExpressionBoolean) isNode()       {}
 func (*ExpressionBoolean) isExpression() {}
 
-func (e ExpressionString) isNode()       {}
-func (e ExpressionString) isExpression() {}
+func (*ExpressionString) isNode()       {}
+func (*ExpressionString) isExpression() {}
+func (*ExpressionString) isIterable()   {}
 
 func (*ExpressionIdentifier) isNode()       {}
 func (*ExpressionIdentifier) isExpression() {}
@@ -32,9 +33,10 @@ func (*ExpressionBinary) isExpression() {}
 
 func (*ExpressionArray) isNode()       {}
 func (*ExpressionArray) isExpression() {}
+func (*ExpressionArray) isIterable()   {}
 
-func (e ExpressionArrayAccess) isNode()       {}
-func (e ExpressionArrayAccess) isExpression() {}
+func (*ExpressionArrayAccess) isNode()       {}
+func (*ExpressionArrayAccess) isExpression() {}
 
 func (*ExpressionStruct) isNode()       {}
 func (*ExpressionStruct) isExpression() {}

@@ -205,8 +205,9 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		return scope.get(v.Tok)
 	case *AST.SE_FunctionCall:
 		functionDeclaration := globalFunctions[v.Tok.Lexeme]
+		functionType := functionDeclaration.DeclType.(*TS.FunctionType)
 		argCount := len(v.Arguments)
-		paramCount := len(functionDeclaration.DeclType.Parameters)
+		paramCount := len(functionType.Params)
 
 		if paramCount != argCount {
 			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
@@ -214,7 +215,7 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 
 		functionScope := CreateScope(&globalScope)
 		for i := 0; i < argCount; i++ {
-			param := functionDeclaration.DeclType.Parameters[i]
+			param := functionType.Params[i]
 			arg := v.Arguments[i]
 			functionScope.set(param.Tok, interpretExpression(arg, scope))
 		}
@@ -285,26 +286,26 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 		v.Expr = interpretExpression(v.Expr, scope)
 		switch ev := v.Expr.(type) {
 		case *AST.ExpressionInteger:
-			if v.CastType.Kind == TS.STRING {
+			if v.CastType.IsString() {
 				v.Expr = &AST.ExpressionString{
 					Value: fmt.Sprintf("%d", ev.Value),
 				}
 			}
 
-			if v.CastType.Kind == TS.FLOAT {
+			if v.CastType.IsFloat() {
 				v.Expr = &AST.ExpressionFloat{
 					Value: float32(ev.Value),
 				}
 			}
 
 		case *AST.ExpressionFloat:
-			if v.CastType.Kind == TS.STRING {
+			if v.CastType.IsString() {
 				v.Expr = &AST.ExpressionString{
 					Value: fmt.Sprintf("%.5g", ev.Value),
 				}
 			}
 
-			if v.CastType.Kind == TS.INTEGER {
+			if v.CastType.IsInteger() {
 				v.Expr = &AST.ExpressionInteger{
 					Value: int(ev.Value),
 				}
@@ -559,8 +560,10 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 
 	case *AST.SE_FunctionCall:
 		functionDeclaration := globalFunctions[v.Tok.Lexeme]
+		functionType := *functionDeclaration.DeclType.(*TS.FunctionType)
+
 		argCount := len(v.Arguments)
-		paramCount := len(functionDeclaration.DeclType.Parameters)
+		paramCount := len(functionType.Params)
 
 		if paramCount != argCount {
 			panic(fmt.Sprintf("expected %d parameter(s), got %d", argCount, paramCount))
@@ -568,7 +571,7 @@ func interpretStatement(s AST.Statement, scope *Scope) AST.Expression {
 
 		functionScope := CreateScope(&globalScope)
 		for i := 0; i < argCount; i++ {
-			param := functionDeclaration.DeclType.Parameters[i]
+			param := functionType.Params[i]
 			arg := v.Arguments[i]
 			functionScope.set(param.Tok, interpretExpression(arg, scope))
 		}

@@ -62,14 +62,15 @@ func (parser *Parser) previousToken() Token.Token {
 }
 
 func (parser *Parser) parseType() TS.Type {
-	arrayCount := 0
-
+	var countArray []int
 	for parser.peekNthToken(0).Kind == Token.LEFT_BRACKET {
 		parser.consumeOnMatch(Token.LEFT_BRACKET)
-		parser.parseExpression()
+		count := parser.parseExpression().(*AST.ExpressionInteger).Value // this should be like a [4]int
+		countArray = append(countArray, count)
 		parser.consumeOnMatch(Token.RIGHT_BRACKET)
-		arrayCount += 1
 	}
+
+	// TODO(Jovanni): handle pointer parsing here
 
 	next := parser.peekNthToken(0)
 	if next.Kind != Token.IDENTIFIER {
@@ -77,14 +78,17 @@ func (parser *Parser) parseType() TS.Type {
 	}
 
 	dataTypeToken := parser.expect(Token.IDENTIFIER)
-	retType := TS.NewType(TS.TypeKind(dataTypeToken.Lexeme), nil, nil)
-
-	if _, ok := parser.ctx.ParsedStructDeclaration[dataTypeToken.Lexeme]; ok {
-		retType = retType.AddStructModifier()
+	var retType TS.Type
+	if v, ok := TS.GetBuiltin(dataTypeToken.Lexeme); ok {
+		retType = v
+	} else if _, ok2 := parser.ctx.ParsedStructDeclaration[dataTypeToken.Lexeme]; ok2 {
+		retType = TS.NewTypeStruct(dataTypeToken.Lexeme, nil)
+	} else {
+		parser.reportError(fmt.Sprintf("Line: %d, Unrecognized type: %s", dataTypeToken.Line, dataTypeToken.Lexeme))
 	}
 
-	for i := 0; i < arrayCount; i++ {
-		retType = retType.AddArrayModifier()
+	for _, count := range countArray {
+		retType = retType.AddStaticArray(count)
 	}
 
 	return retType

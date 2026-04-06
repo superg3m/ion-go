@@ -1,5 +1,9 @@
 package TS
 
+import (
+	"ion-go/Token"
+)
+
 const (
 	TYPE_VOID = "void"
 	TYPE_BOOL = "bool"
@@ -8,22 +12,18 @@ const (
 	TYPE_INTEGER  = "%s%d"
 	TYPE_FLOATING = "f%d"
 
-	TYPE_STRING       = "string"
-	TYPE_MATH_VECTOR2 = "vec2"
-	TYPE_MATH_VECTOR3 = "vec3"
-	TYPE_MATH_VECTOR4 = "vec4"
-	TYPE_MATH_MAT4    = "mat4"
-
-	TYPE_ALIAS         = "TYPE_ALIAS"
-	TYPE_STATIC_ARRAY  = "[%d]"
-	TYPE_DYNAMIC_ARRAY = "[..]"
-	TYPE_POINTER       = "*"
-
-	TYPE_STRUCT   = "STRUCT"
-	TYPE_FUNCTION = "FUNCTION"
+	TYPE_STATIC_ARRAY = "[%d]"
+	TYPE_POINTER      = "*"
 )
 
 /*
+// These are just structs now that I think about it:
+	TYPE_STRING       = "String"
+	TYPE_MATH_VECTOR2 = "Vector2"
+	TYPE_MATH_VECTOR3 = "Vector3"
+	TYPE_MATH_VECTOR4 = "Vector4"
+	TYPE_MATH_MAT4    = "Matrix4"
+
 struct StringType {
 	u8* data;
 	u64 length;
@@ -43,10 +43,13 @@ type Type interface {
 	IsStruct() bool
 	IsPointer() bool
 	IsArray() bool
+	IsString() bool
+	IsInteger() bool
+	IsFloat() bool
 	RemoveModifier() Type
-	RemoveStaticArray(capacity int) Type
-	RemoveDynamicArray(capacity int) Type
-	RemovePointer() Type
+	AddAlias(strict bool, name string) Type
+	AddStaticArray(count int) Type
+	AddPointer() Type
 	String() string
 }
 
@@ -82,10 +85,20 @@ type StringType struct {
 	BaseType
 }
 
+type Member struct {
+	Tok      Token.Token
+	DeclType Type
+}
+
+type Parameter struct {
+	Tok      Token.Token
+	DeclType Type
+}
+
 type StructType struct {
 	BaseType
-	StructName  string
-	MemberTypes []Type
+	StructName string
+	Members    []Member
 }
 
 type AliasType struct {
@@ -97,16 +110,12 @@ type AliasType struct {
 type FunctionType struct {
 	BaseType
 	ReturnType Type
-	ParamTypes []Type
+	Params     []Parameter
 }
 
 type StaticArrayType struct {
 	BaseType
-	Capacity int // not byte capacity but the like size capacity int[4] is not the same as u64[2] even if the capacity in bytes is the same
-}
-
-type DynamicArrayType struct {
-	BaseType
+	Count int
 }
 
 type PointerType struct {

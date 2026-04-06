@@ -2,6 +2,7 @@ package TS
 
 import (
 	"fmt"
+	"ion-go/Token"
 	"reflect"
 	"unsafe"
 )
@@ -10,33 +11,32 @@ func (b *BaseType) isType()          {}
 func (b *BaseType) String() string   { return "BaseType" }
 func (b *BaseType) Underlying() Type { return b.underlying }
 func (b *BaseType) Size() int        { return 0 }
+func (b *BaseType) IsInteger() bool  { return false }
+func (b *BaseType) IsString() bool   { return false }
 func (b *BaseType) IsStruct() bool   { return false }
 func (b *BaseType) IsPointer() bool  { return false }
 func (b *BaseType) IsArray() bool    { return false }
+func (b *BaseType) IsFloat() bool    { return false }
+
+func (b *BaseType) IsFunction() bool { return false }
 func (b *BaseType) AddAlias(strict bool, name string) Type {
 	return &AliasType{
-		BaseType{b},
-		strict,
-		name,
+		BaseType:  BaseType{b},
+		Strict:    strict,
+		AliasName: name,
 	}
 }
 
-func (b *BaseType) AddStaticArray(capacity int) Type {
+func (b *BaseType) AddStaticArray(count int) Type {
 	return &StaticArrayType{
-		BaseType{b},
-		capacity,
-	}
-}
-
-func (b *BaseType) AddDynamicArray(capacity int) Type {
-	return &DynamicArrayType{
-		BaseType{b},
+		BaseType: BaseType{b},
+		Count:    count,
 	}
 }
 
 func (b *BaseType) AddPointer() Type {
 	return &PointerType{
-		BaseType{b},
+		BaseType: BaseType{b},
 	}
 }
 
@@ -48,46 +48,42 @@ func AllocateDeepCopyType(t Type) Type {
 	switch v := t.(type) {
 	case *CharType:
 		return &CharType{
-			BaseType{AllocateDeepCopyType(t.Underlying())},
-			v.Signed,
+			BaseType: BaseType{AllocateDeepCopyType(t.Underlying())},
+			Signed:   v.Signed,
 		}
 	case *IntegerType:
 		return &IntegerType{
-			BaseType{AllocateDeepCopyType(t.Underlying())},
-			v.Signed,
-			v.Bytes,
+			BaseType: BaseType{AllocateDeepCopyType(t.Underlying())},
+			Signed:   v.Signed,
+			Bytes:    v.Bytes,
 		}
 	case *FloatType:
-		return &StaticArrayType{
-			BaseType{AllocateDeepCopyType(t.Underlying())},
-			v.Bytes,
+		return &FloatType{
+			BaseType: BaseType{AllocateDeepCopyType(t.Underlying())},
+			Bytes:    v.Bytes,
 		}
 	case *StaticArrayType:
 		return &StaticArrayType{
-			BaseType{AllocateDeepCopyType(t.Underlying())},
-			v.Capacity,
-		}
-	case *DynamicArrayType:
-		return &DynamicArrayType{
-			BaseType{AllocateDeepCopyType(t.Underlying())},
+			BaseType: BaseType{AllocateDeepCopyType(t.Underlying())},
+			Count:    v.Count,
 		}
 	case *StructType:
 		return &StructType{
-			BaseType{AllocateDeepCopyType(t.Underlying())},
-			v.StructName,
-			v.MemberTypes,
+			BaseType:   BaseType{AllocateDeepCopyType(t.Underlying())},
+			StructName: v.StructName,
+			Members:    v.Members,
 		}
 	case *FunctionType:
 		return &FunctionType{
-			BaseType{AllocateDeepCopyType(t.Underlying())},
-			v.ReturnType,
-			v.ParamTypes,
+			BaseType:   BaseType{AllocateDeepCopyType(t.Underlying())},
+			ReturnType: v.ReturnType,
+			Params:     v.Params,
 		}
 	case *AliasType:
 		return &AliasType{
-			BaseType{AllocateDeepCopyType(t.Underlying())},
-			v.Strict,
-			v.AliasName,
+			BaseType:  BaseType{AllocateDeepCopyType(t.Underlying())},
+			Strict:    v.Strict,
+			AliasName: v.AliasName,
 		}
 	case *PointerType:
 		return &PointerType{
@@ -102,25 +98,6 @@ func AllocateDeepCopyType(t Type) Type {
 
 func (b *BaseType) RemoveModifier() Type {
 	return AllocateDeepCopyType(b)
-}
-
-func (b *BaseType) RemoveStaticArray(capacity int) Type {
-	return &StaticArrayType{
-		BaseType{b},
-		capacity,
-	}
-}
-
-func (b *BaseType) RemoveDynamicArray(capacity int) Type {
-	return &DynamicArrayType{
-		BaseType{b},
-	}
-}
-
-func (b *BaseType) RemovePointer() Type {
-	return &PointerType{
-		BaseType{b},
-	}
 }
 
 func (v *VoidType) isType() {}
@@ -143,8 +120,9 @@ func (c *CharType) String() string {
 	return fmt.Sprintf(TYPE_CHAR, u)
 }
 
-func (i *IntegerType) isType()   {}
-func (i *IntegerType) Size() int { return i.Bytes }
+func (i *IntegerType) isType()         {}
+func (i *IntegerType) Size() int       { return i.Bytes }
+func (i *IntegerType) IsInteger() bool { return true }
 func (i *IntegerType) String() string {
 	c := "u"
 	if i.Signed {
@@ -154,24 +132,24 @@ func (i *IntegerType) String() string {
 	return fmt.Sprintf(TYPE_INTEGER, c, i.Bytes*8)
 }
 
-func (f *FloatType) isType()   {}
-func (f *FloatType) Size() int { return f.Bytes }
+func (f *FloatType) isType()       {}
+func (f *FloatType) Size() int     { return f.Bytes }
+func (f *FloatType) IsFloat() bool { return true }
 func (f *FloatType) String() string {
 	return fmt.Sprintf(TYPE_FLOATING, f.Bytes*8)
 }
 
-func (s *StringType) isType()   {}
-func (s *StringType) Size() int { return 16 }
-func (s *StringType) String() string {
-	return TYPE_STRING
-}
-
-func (s *StructType) isType()         {}
-func (p *PointerType) IsStruct() bool { return true }
+func (s *StructType) isType()        {}
+func (s *StructType) IsString() bool { return s.StructName == "String" } // very hacky way to do this
+func (s *StructType) IsStruct() bool { return true }
 func (s *StructType) Size() int {
+	if s.IsString() {
+		return 16
+	}
+
 	totalSizeWithoutPadding := 0
-	for _, m := range s.MemberTypes {
-		totalSizeWithoutPadding += m.Size()
+	for _, m := range s.Members {
+		totalSizeWithoutPadding += m.DeclType.Size()
 	}
 
 	// TODO(Jovanni): Alignment and padding
@@ -187,13 +165,13 @@ func (a *AliasType) String() string {
 	return fmt.Sprintf(a.AliasName)
 }
 
-func (f *FunctionType) isType()      {}
-func (b *BaseType) IsFunction() bool { return true }
+func (f *FunctionType) isType()          {}
+func (f *FunctionType) IsFunction() bool { return true }
 func (f *FunctionType) String() string {
 	ret := "fn("
-	for i, param := range f.ParamTypes {
-		ret += param.String()
-		if i < len(f.ParamTypes)-1 {
+	for i, param := range f.Params {
+		ret += param.DeclType.String()
+		if i < len(f.Params)-1 {
 			ret += ", "
 		}
 	}
@@ -205,19 +183,10 @@ func (f *FunctionType) String() string {
 func (arr *StaticArrayType) isType()       {}
 func (arr *StaticArrayType) IsArray() bool { return true }
 func (arr *StaticArrayType) Size() int {
-	return arr.Underlying().Size() * arr.Capacity
+	return arr.Underlying().Size() * arr.Count
 }
 func (arr *StaticArrayType) String() string {
-	return fmt.Sprintf(TYPE_STATIC_ARRAY, arr.Capacity) + arr.Underlying().String()
-}
-
-func (dyn *DynamicArrayType) isType()       {}
-func (dyn *DynamicArrayType) IsArray() bool { return true }
-func (dyn *DynamicArrayType) Size() int {
-	return 16 // void* + u64
-}
-func (dyn *DynamicArrayType) String() string {
-	return TYPE_DYNAMIC_ARRAY + dyn.Underlying().String()
+	return fmt.Sprintf(TYPE_STATIC_ARRAY, arr.Count) + arr.Underlying().String()
 }
 
 func (p *PointerType) isType()         {}
@@ -265,24 +234,35 @@ func NewTypeFloat(bytes int) Type {
 }
 
 func NewTypeString() Type {
-	return &StringType{
-		BaseType{nil},
+	typeU8Star := NewTypeInteger(false, 1).AddPointer()
+	typeU64 := NewTypeInteger(false, 8)
+	members := []Member{
+		{
+			Token.CreateToken(Token.IDENTIFIER, "data", 0),
+			typeU8Star,
+		},
+		{
+			Token.CreateToken(Token.IDENTIFIER, "length", 0),
+			typeU64,
+		},
 	}
+
+	return NewTypeStruct("String", members)
 }
 
-func NewTypeStruct(name string, memberTypes []Type) Type {
+func NewTypeStruct(name string, members []Member) Type {
 	return &StructType{
-		BaseType{nil},
-		name,
-		memberTypes,
+		BaseType:   BaseType{nil},
+		StructName: name,
+		Members:    members,
 	}
 }
 
-func NewTypeFunction(returnType Type, paramTypes []Type) Type {
+func NewTypeFunction(returnType Type, params []Parameter) Type {
 	return &FunctionType{
-		BaseType{nil},
-		returnType,
-		paramTypes,
+		BaseType:   BaseType{nil},
+		ReturnType: returnType,
+		Params:     params,
 	}
 }
 
@@ -352,15 +332,15 @@ func TypeCompare(t1 Type, t2 Type) bool {
 		return TypeCompare(t1.Underlying(), t2.Underlying())
 	case *StructType:
 		v2 := t2.(*StructType)
-		if len(v1.MemberTypes) != len(v2.MemberTypes) {
+		if len(v1.Members) != len(v2.Members) {
 			return false
 		}
 
-		for i := 0; i < len(v1.MemberTypes); i++ {
-			m1 := v1.MemberTypes[i]
-			m2 := v2.MemberTypes[i]
+		for i := 0; i < len(v1.Members); i++ {
+			m1 := v1.Members[i]
+			m2 := v2.Members[i]
 
-			if !TypeCompare(m1, m2) {
+			if !TypeCompare(m1.DeclType, m2.DeclType) {
 				return false
 			}
 		}
@@ -370,15 +350,15 @@ func TypeCompare(t1 Type, t2 Type) bool {
 			return false
 		}
 
-		if len(v1.ParamTypes) != len(v2.ParamTypes) {
+		if len(v1.Params) != len(v2.Params) {
 			return false
 		}
 
-		for i := 0; i < len(v1.ParamTypes); i++ {
-			p1 := v1.ParamTypes[i]
-			p2 := v2.ParamTypes[i]
+		for i := 0; i < len(v1.Params); i++ {
+			p1 := v1.Params[i]
+			p2 := v2.Params[i]
 
-			if !TypeCompare(p1, p2) {
+			if !TypeCompare(p1.DeclType, p2.DeclType) {
 				return false
 			}
 		}
@@ -430,8 +410,88 @@ func CanExplicitCast(caster Type, castee Type) bool {
 	return TypeCompare(caster, castee)
 }
 
+func GetBuiltin(s string) (Type, bool) {
+	m := map[string]Type{
+		"void": NewTypeVoid(),
+		"bool": NewTypeBool(),
+
+		"uchar": NewTypeChar(false),
+		"char":  NewTypeChar(true),
+
+		"u8":  NewTypeInteger(false, 1),
+		"u16": NewTypeInteger(false, 2),
+		"u32": NewTypeInteger(false, 4),
+		"u64": NewTypeInteger(false, 8),
+
+		"s8":  NewTypeInteger(true, 1),
+		"s16": NewTypeInteger(true, 2),
+		"s32": NewTypeInteger(true, 4),
+		"s64": NewTypeInteger(true, 8),
+
+		"f32": NewTypeFloat(4),
+		"f64": NewTypeFloat(8),
+
+		"string": NewTypeString(),
+	}
+
+	ret, ok := m[s]
+	return ret, ok
+}
+
 /*
 func CanImplicitCast() bool {
 	return true
 }
+*/
+
+/*
+struct BinaryQuery {
+TypeKind left;
+const char* op;
+TypeKind right;
+
+bool operator==(BinaryQuery other) const {
+return (left == other.left) && str_equal(this->op, other.op) && (right == other.right);
+}
+};
+
+BinaryQuery binary_query_create(TypeKind left, const char* op, TypeKind right) {
+BinaryQuery ret = {};
+ret.left = left;
+ret.op = op;
+ret.right = right;
+
+return ret;
+}
+
+#define X_ARITHMITIC_OPERATORS \
+X("+")                     \
+X("-")                     \
+X("*")                     \
+X("/")                     \
+X("<")                     \
+X("<=")                    \
+X(">")                     \
+X(">=")                    \
+
+bool type_can_perform_binary_op(TypeKind t1, const char* op, TypeKind t2) {
+LOCAL_PERSIST Hashmap<BinaryQuery, bool> binary_query_map = hashmap_create<BinaryQuery, bool>(allocator_general(), {
+#define X(ENUM, STR, SIZE) {binary_query_create(ENUM, "==", ENUM), true}, {binary_query_create(ENUM, "!=", ENUM), true},
+X_TYPE_BUILTIN
+#undef X
+
+#define X(OP) {binary_query_create(TYPE_INTEGER, OP, TYPE_INTEGER), true}, {binary_query_create(TYPE_INTEGER, OP, TYPE_FLOATING), true}, {binary_query_create(TYPE_FLOATING, OP, TYPE_FLOATING), true}, {binary_query_create(TYPE_INTEGER, OP, TYPE_FLOATING), true},
+X_ARITHMITIC_OPERATORS
+#undef X
+
+{binary_query_create(TYPE_POINTER, "+", TYPE_INTEGER), true},
+{binary_query_create(TYPE_POINTER, "-", TYPE_INTEGER), true},
+});
+
+// NOTE(Jovanni): This is because I don't want to have to specify like pointer + u8 and u8 + pointer
+BinaryQuery q1 = binary_query_create(t1, op, t2);
+BinaryQuery q2 = binary_query_create(t2, op, t1);
+return hashmap_has(&binary_query_map, q1) || hashmap_has(&binary_query_map, q2);
+}
+
 */

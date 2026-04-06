@@ -28,8 +28,8 @@ func (parser *Parser) parseParameters() []TS.Parameter {
 	return params
 }
 
-func (parser *Parser) parseMembers() []AST.Member {
-	var params []AST.Member
+func (parser *Parser) parseMembers() []TS.Member {
+	var params []TS.Member
 
 	parser.expect(Token.LEFT_CURLY)
 	for !parser.consumeOnMatch(Token.RIGHT_CURLY) {
@@ -37,7 +37,7 @@ func (parser *Parser) parseMembers() []AST.Member {
 		parser.expect(Token.COLON)
 		dataType := parser.parseType()
 
-		params = append(params, AST.Member{
+		params = append(params, TS.Member{
 			Tok:      member,
 			DeclType: dataType,
 		})
@@ -80,7 +80,7 @@ func (parser *Parser) parseFunctionDeclaration() AST.Declaration {
 	returnType := parser.parseType()
 	block := parser.parseStatementBlock().(*AST.StatementBlock)
 
-	declType := TS.NewType(TS.FUNCTION, returnType, params)
+	declType := TS.NewTypeFunction(returnType, params)
 
 	return &AST.DeclarationFunction{
 		Tok:      ident,
@@ -94,7 +94,7 @@ func (parser *Parser) parseStructDeclaration() AST.Declaration {
 	typeName := parser.expect(Token.IDENTIFIER)
 	members := parser.parseMembers()
 
-	memberLookup := make(map[string]AST.Member)
+	memberLookup := make(map[string]TS.Member)
 	for _, member := range members {
 		memberLookup[member.Tok.Lexeme] = member
 	}

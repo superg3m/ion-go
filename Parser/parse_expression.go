@@ -200,7 +200,7 @@ func (parser *Parser) parseLogicalExpression() AST.Expression {
 func (parser *Parser) parseArrayExpression() AST.Expression {
 	var elements []AST.Expression
 
-	declType := TS.NewType(TS.ARRAY, nil, nil)
+	var declType TS.Type
 	if parser.ctx.ParsingArrayLiteral == 0 {
 		declType = parser.parseType()
 		parser.expect(Token.DOT)
@@ -217,6 +217,13 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 		}
 	}
 	parser.ctx.ParsingArrayLiteral -= 1
+
+	if declType == nil {
+		declType = &TS.StaticArrayType{
+			BaseType: TS.BaseType{},
+			Count:    len(elements),
+		}
+	}
 
 	return &AST.ExpressionArray{
 		Elements: elements,

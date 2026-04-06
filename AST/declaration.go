@@ -22,13 +22,8 @@ type DeclarationFunction struct {
 	Block    *StatementBlock
 }
 
-type Member struct {
-	Tok      Token.Token
-	DeclType TS.Type
-}
-
 type DeclarationStruct struct {
 	Tok          Token.Token
-	Members      []Member
-	MemberLookup map[string]Member
+	Members      []TS.Member
+	MemberLookup map[string]TS.Member
 }
