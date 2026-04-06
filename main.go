@@ -17,6 +17,12 @@ func main() {
 	// tokenStream := Lexer.GenerateTokenStream("./test.ion")
 	// tokenStream := Lexer.GenerateTokenStream("./struct.ion")
 
+	// SPL_Test
+	// iterate through these have like
+	// 001_implicit_cast_binary_op.spl
+	// 002_implicit_cast_function_arg.spl
+	// 003_multi_dimension_static_array_.spl
+
 	for i := 0; i < len(tokenStream); i++ {
 		token := tokenStream[i]
 		tokenType, tokenValue := token.Kind, token.Lexeme

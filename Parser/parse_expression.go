@@ -220,8 +220,8 @@ func (parser *Parser) parseArrayExpression() AST.Expression {
 
 	if declType == nil {
 		declType = &TS.StaticArrayType{
-			BaseType: TS.BaseType{},
-			Count:    len(elements),
+			TS.BaseType{},
+			len(elements),
 		}
 	}
 
