@@ -19,25 +19,29 @@ func (b *BaseType) IsArray() bool    { return false }
 func (b *BaseType) IsFloat() bool    { return false }
 
 func (b *BaseType) IsFunction() bool { return false }
-func (b *BaseType) AddAlias(strict bool, name string) Type {
+func AddAlias(t Type, strict bool, name string) Type {
 	return &AliasType{
-		BaseType:  BaseType{b},
+		BaseType:  BaseType{t},
 		Strict:    strict,
 		AliasName: name,
 	}
 }
 
-func (b *BaseType) AddStaticArray(count int) Type {
+func AddStaticArray(t Type, count int) Type {
 	return &StaticArrayType{
-		BaseType: BaseType{b},
+		BaseType: BaseType{t},
 		Count:    count,
 	}
 }
 
-func (b *BaseType) AddPointer() Type {
+func AddPointer(t Type) Type {
 	return &PointerType{
-		BaseType: BaseType{b},
+		BaseType: BaseType{t},
 	}
+}
+
+func RemoveModifier(t Type) Type {
+	return AllocateDeepCopyType(t.Underlying())
 }
 
 func AllocateDeepCopyType(t Type) Type {
@@ -97,7 +101,7 @@ func AllocateDeepCopyType(t Type) Type {
 }
 
 func (b *BaseType) RemoveModifier() Type {
-	return AllocateDeepCopyType(b)
+	return AllocateDeepCopyType(b.Underlying())
 }
 
 func (v *VoidType) isType() {}
@@ -234,7 +238,7 @@ func NewTypeFloat(bytes int) Type {
 }
 
 func NewTypeString() Type {
-	typeU8Star := NewTypeInteger(false, 1).AddPointer()
+	typeU8Star := AddPointer(NewTypeInteger(false, 1))
 	typeU64 := NewTypeInteger(false, 8)
 	members := []Member{
 		{
@@ -395,6 +399,25 @@ func CanExplicitCast(caster Type, castee Type) bool {
 		}
 	}
 
+	{
+		v, isCasterStruct := caster.(*StructType)
+		if isCasterStruct && v.IsString() {
+			return true
+		}
+
+		_, isCasterInteger := caster.(*IntegerType)
+		_, isCasteeFloat := castee.(*FloatType)
+		if isCasterInteger && isCasteeFloat {
+			return true
+		}
+
+		_, isCasterFloat := caster.(*FloatType)
+		_, isCasteeInteger := castee.(*IntegerType)
+		if isCasterFloat && isCasteeInteger {
+			return true
+		}
+	}
+
 	/*
 		{
 			bool is_number_to_number_cast_allowed = (
@@ -467,7 +490,7 @@ func getTypeKind(t Type) TypeKind {
 		return INTEGER
 	case *FloatType:
 		return FLOAT
-	case *PointerType:
+	case *BoolType:
 		return BOOL
 	case *StructType:
 		if v.IsString() {
@@ -491,6 +514,11 @@ func GetPromotedType(op Token.Token, leftType Type, rightType Type) Type {
 		{"*", INTEGER, FLOAT}:   typeF32,
 		{"/", INTEGER, FLOAT}:   typeF32,
 		{"%", INTEGER, INTEGER}: typeS32,
+
+		{"<", INTEGER, FLOAT}:  typeBool,
+		{"<=", INTEGER, FLOAT}: typeBool,
+		{">", INTEGER, FLOAT}:  typeBool,
+		{">=", INTEGER, FLOAT}: typeBool,
 
 		{"+", STRING, STRING}:  typeString,
 		{"+", STRING, INTEGER}: typeString,

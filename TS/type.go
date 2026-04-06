@@ -34,10 +34,6 @@ type Type interface {
 	IsString() bool
 	IsInteger() bool
 	IsFloat() bool
-	RemoveModifier() Type
-	AddAlias(strict bool, name string) Type
-	AddStaticArray(count int) Type
-	AddPointer() Type
 	String() string
 }
 

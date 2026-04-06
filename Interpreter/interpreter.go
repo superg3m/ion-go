@@ -277,7 +277,8 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 			return ev.Elements[interpretExpression(index, scope).(*AST.ExpressionInteger).Value]
 		case *AST.ExpressionStruct:
 			return ev.MemberValues[index.(*AST.ExpressionIdentifier).Tok.Lexeme]
-
+		case *AST.ExpressionString: // SO BAD SO HACKY
+			return &AST.ExpressionInteger{Value: len(ev.Value)}
 		default:
 			panic("unreachable")
 		}

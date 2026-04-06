@@ -81,14 +81,14 @@ func (parser *Parser) parseType() TS.Type {
 	var retType TS.Type
 	if v, ok := TS.GetBuiltin(dataTypeToken.Lexeme); ok {
 		retType = v
-	} else if _, ok2 := parser.ctx.ParsedStructDeclaration[dataTypeToken.Lexeme]; ok2 {
-		retType = TS.NewTypeStruct(dataTypeToken.Lexeme, nil)
+	} else if structDecl, ok2 := parser.ctx.ParsedStructDeclaration[dataTypeToken.Lexeme]; ok2 {
+		retType = TS.NewTypeStruct(dataTypeToken.Lexeme, structDecl.Members)
 	} else {
 		parser.reportError(fmt.Sprintf("Line: %d, Unrecognized type: %s", dataTypeToken.Line, dataTypeToken.Lexeme))
 	}
 
 	for _, count := range countArray {
-		retType = retType.AddStaticArray(count)
+		retType = TS.AddStaticArray(retType, count)
 	}
 
 	return retType

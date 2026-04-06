@@ -1,10 +1,10 @@
 struct Foo {
-    bar: float
+    bar: f32
 }
 
 struct Person {
-    age: int,
-    foo: []Foo,
+    age: s32,
+    foo: [2]Foo,
     name: string
 }
 
@@ -13,8 +13,8 @@ fn do_something(x: Person) -> void {
 }
 
 fn main() -> void {
-    var test := []Foo.[Foo.{1.5}, Foo.{2.2}];
-    var x: Person = Person.{23, []Foo.[Foo.{5.2}, Foo.{10.0}], "John"};
+    var test := [2]Foo.[Foo.{1.5}, Foo.{2.2}];
+    var x: Person = Person.{23, [2]Foo.[Foo.{5.2}, Foo.{10.0}], "John"};
     println(test);
     test[0].bar = 1.2; // This is the index!
     test[1].bar = 404.2;
@@ -24,7 +24,7 @@ fn main() -> void {
     println(x.foo[0].bar);
     x.foo[0].bar = 6.2;
 
-    test[cast(int)test[0].bar].bar = 53.2;
+    test[cast(s32)test[0].bar].bar = 53.2;
 
     do_something(x);
     println(test);

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ion-go/AST"
 	"ion-go/TS"
+	"ion-go/Token"
 )
 
 type StatementTypePair struct {
@@ -74,12 +75,12 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 	case *AST.ExpressionArray:
 		for i, element := range v.Elements {
 			if ref, ok := element.(*AST.ExpressionArray); ok {
-				ref.DeclType = v.DeclType.RemoveModifier()
+				ref.DeclType = TS.RemoveModifier(v.DeclType)
 			}
 
 			elementType := typeCheckExpression(element, env)
-			if !TS.TypeCompare(elementType, v.DeclType.RemoveModifier()) {
-				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, v.DeclType.RemoveModifier().String(), elementType.String()))
+			if !TS.TypeCompare(elementType, TS.RemoveModifier(v.DeclType)) {
+				panic(fmt.Sprintf("Element %d: expected %s, got %s", i, TS.RemoveModifier(v.DeclType).String(), elementType.String()))
 			}
 		}
 
@@ -92,7 +93,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 		case *AST.ExpressionIdentifier:
 			evType := typeCheckExpression(ev, env)
 
-			if _, ok := evType.(AST.Iterable); !ok {
+			if !evType.IsArray() {
 				panic(fmt.Sprintf("Typechecking error line %d | Builtin Len(%s) identifier: %s %s argument is not iterable", ev.Tok.Line, ev.Tok.Lexeme, ev.Tok.Lexeme, evType.String()))
 			}
 		default:
@@ -202,7 +203,7 @@ func typeCheckExpression(e AST.Expression, env *TypeEnv) TS.Type {
 				}
 
 				if accessType.IsArray() {
-					accessType = accessType.RemoveModifier()
+					accessType = TS.RemoveModifier(accessType)
 					decl = globalStruct[accessType.String()]
 				} else {
 					panic(fmt.Sprintf("Line: %d | undefined array access: %s", v.Tok.Line, accessString))
@@ -383,6 +384,32 @@ func TypeCheckProgram(program AST.Program) {
 	globalEnv := NewTypeEnv(nil)
 	globalFunctions = make(map[string]*AST.DeclarationFunction)
 	globalStruct = make(map[string]*AST.DeclarationStruct)
+
+	{ // Adding builtin structs
+		typeU8Star := TS.AddPointer(TS.NewTypeInteger(false, 1))
+		typeU64 := TS.NewTypeInteger(false, 8)
+		members := []TS.Member{
+			{
+				Token.CreateToken(Token.IDENTIFIER, "data", 0),
+				typeU8Star,
+			},
+			{
+				Token.CreateToken(Token.IDENTIFIER, "length", 0),
+				typeU64,
+			},
+		}
+
+		memberLookup := make(map[string]TS.Member)
+		for _, member := range members {
+			memberLookup[member.Tok.Lexeme] = member
+		}
+
+		globalStruct["String"] = &AST.DeclarationStruct{
+			Token.CreateToken(Token.IDENTIFIER, "String", 0),
+			members,
+			memberLookup,
+		}
+	}
 
 	for _, decl := range program.Declarations {
 		typeCheckDeclaration(decl, globalEnv)

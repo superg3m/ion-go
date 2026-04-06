@@ -9,11 +9,6 @@ type Deferrable interface {
 	isDeferrable()
 }
 
-type Iterable interface {
-	Node
-	isIterable()
-}
-
 type Program struct {
 	Declarations []Declaration
 }
