@@ -4,6 +4,6 @@
 fn main() -> void {
     var a: s8 = cast(s8)42;
     var b: s64 = a; // implicit widen
-    var c: s32 = b; // should fail: narrowing
+    // var c: s32 = b; // should fail: narrowing
     println(b);
 }

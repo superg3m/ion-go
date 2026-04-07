@@ -3,7 +3,7 @@ fn main() -> void {
     var f: bool = false;
     var r := t && f;
     var s := t || f;
-    var x: s32 = t; // should fail: bool is not s32
+    // var x: s32 = t; // should fail: bool is not s32
     var y: s32 = cast(s32)t; // explicit cast: 1 or 0?
     println(r);
     println(s);

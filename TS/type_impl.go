@@ -306,97 +306,92 @@ func typeEqual(t1 Type, t2 Type) bool {
 	return reflect.TypeOf(t1) == reflect.TypeOf(t2)
 }
 
-// TypeStructuralEquivalence(t1 Type, t2 Type) (bool, error)
-// TypeStrictNameEquivalence(t1 Type, t2 Type) (bool, error)
-// TypeStrictCompatible(t1 Type, t2 Type) (bool, error) // does unsigned checks, and byte check
-// TypeLooseCompatible(t1 Type, t2 Type) (bool, error) // does unsigned checks
-
-// TypeCompare This is a structural + strict equivalence
-func TypeCompare(t1 Type, t2 Type) (bool, error) {
-	for {
-		strictAlias1 := getFirstStrictAlias(t1)
-		strictAlias2 := getFirstStrictAlias(t2)
-
-		if (strictAlias1 == nil) || (strictAlias2 == nil) {
-			break
-		}
-
-		if strictAlias1.(*AliasType).AliasName != strictAlias2.(*AliasType).AliasName {
-			return false, fmt.Errorf("strict alias types are different")
-		}
-
-		t1 = strictAlias1.Underlying()
-		t2 = strictAlias2.Underlying()
-	}
-
+// TypeStructuralEquivalence this will also act as TypeLooseNameEquivalence()
+func TypeStructuralEquivalence(t1 Type, t2 Type) bool {
 	t1 = getFirstNonTypeAlias(t1)
 	t2 = getFirstNonTypeAlias(t2)
+
 	if !typeEqual(t1, t2) {
-		return false, fmt.Errorf("")
+		return false
 	}
 
 	switch v1 := t1.(type) {
 	case *IntegerType:
 		v2 := t2.(*IntegerType)
-		if (v1.Bytes == v2.Bytes) && (v1.Signed == v2.Signed) {
-			return true, nil
-		}
-
-		return false, fmt.Errorf("")
+		return v1.Bytes == v2.Bytes
 	case *FloatType:
 		v2 := t2.(*FloatType)
-		if v1.Bytes == v2.Bytes {
-			return true, nil
-		}
-
-		return false, fmt.Errorf("")
+		return v1.Bytes == v2.Bytes
 	case *PointerType:
-		return TypeCompare(t1.Underlying(), t2.Underlying())
+		return TypeStructuralEquivalence(t1.Underlying(), t2.Underlying())
 	case *StaticArrayType:
 		v2 := t2.(*StaticArrayType)
-		ok, err := TypeCompare(t1.Underlying(), t2.Underlying())
+		structurallyEquivalent := TypeStructuralEquivalence(t1.Underlying(), t2.Underlying())
 
-		return ok && (v1.Count == v2.Count), err
+		return (v1.Count == v2.Count) && structurallyEquivalent
 	case *StructType:
 		// This is a structural equivalence
 		v2 := t2.(*StructType)
 		if len(v1.Members) != len(v2.Members) {
-			return false, fmt.Errorf("")
+			return false
 		}
 
 		for i := 0; i < len(v1.Members); i++ {
 			m1 := v1.Members[i]
 			m2 := v2.Members[i]
 
-			if ok, err := TypeCompare(m1.DeclType, m2.DeclType); !ok {
-				return false, err
+			if !TypeStructuralEquivalence(m1.DeclType, m2.DeclType) {
+				return false
 			}
 		}
 	case *FunctionType:
 		v2 := t2.(*FunctionType)
-		if ok, err := TypeCompare(v1.ReturnType, v2.ReturnType); !ok {
-			return false, err
+		if !TypeStructuralEquivalence(v1.ReturnType, v2.ReturnType) {
+			return false
 		}
 
 		if len(v1.Params) != len(v2.Params) {
-			return false, fmt.Errorf("")
+			return false
 		}
 
 		for i := 0; i < len(v1.Params); i++ {
 			p1 := v1.Params[i]
 			p2 := v2.Params[i]
 
-			if ok, err := TypeCompare(p1.DeclType, p2.DeclType); !ok {
-				return false, err
+			if TypeStructuralEquivalence(p1.DeclType, p2.DeclType) {
+				return false
 			}
 		}
 	}
 
-	return true, nil
+	return true
 }
 
-// TypeSafeStructurallyStrictCompatible Structurally and strict equivalent and safe implicit casting
-func TypeSafeStructurallyStrictCompatible(t1 Type, t2 Type) (bool, error) {
+func TypeStrictNameEquivalence(t1 Type, t2 Type) bool {
+	for {
+		strictAlias1 := getFirstStrictAlias(t1)
+		strictAlias2 := getFirstStrictAlias(t2)
+
+		if (strictAlias1 == nil) || (strictAlias2 == nil) {
+			break
+		}
+
+		if strictAlias1.(*AliasType).AliasName != strictAlias2.(*AliasType).AliasName {
+			return false
+		}
+
+		t1 = strictAlias1.Underlying()
+		t2 = strictAlias2.Underlying()
+	}
+
+	t1 = getFirstNonTypeAlias(t1)
+	t2 = getFirstNonTypeAlias(t2)
+
+	return t1.String() == t2.String()
+}
+
+// does unsigned vs signed checks, and byte check
+func TypeStrictCompare(t1 Type, t2 Type) (bool, error) {
 	for {
 		strictAlias1 := getFirstStrictAlias(t1)
 		strictAlias2 := getFirstStrictAlias(t2)
@@ -422,52 +417,75 @@ func TypeSafeStructurallyStrictCompatible(t1 Type, t2 Type) (bool, error) {
 	switch v1 := t1.(type) {
 	case *IntegerType:
 		v2 := t2.(*IntegerType)
-		// narrowing cast
-		if v1.Signed == v2.Signed {
-			return true, nil
+		if v1.Signed != v2.Signed {
+			return false, fmt.Errorf("integer sign mismatch: '%s', '%s'", v1.String(), v2.String())
 		}
 
-		return false, fmt.Errorf("integer sign mismatch")
+		return v1.Bytes == v2.Bytes, fmt.Errorf("integer size mismatch: '%s', '%s'", v1.String(), v2.String())
 	case *FloatType:
-		return true, nil
+		v2 := t2.(*FloatType)
+		return v1.Bytes == v2.Bytes, fmt.Errorf("float size mismatch: '%s', '%s'", v1.String(), v2.String())
+	case *StaticArrayType:
+		v2 := t2.(*StaticArrayType)
+		ok, err := TypeStrictCompare(t1.Underlying(), t2.Underlying())
+
+		return v1.Count == v2.Count && ok, err
 	case *PointerType:
-		return TypeSafeStructurallyStrictCompatible(t1.Underlying(), t2.Underlying())
+		return TypeStrictCompare(t1.Underlying(), t2.Underlying())
 	case *StructType:
-		return TypeCompare(t1, t2)
+		return TypeStructuralEquivalence(t1, t2), fmt.Errorf("'%s' and '%s' and not structurally equivalent", t1.String(), t2.String())
+	}
+
+	if !TypeStructuralEquivalence(t1.Underlying(), t2.Underlying()) {
+		return false, fmt.Errorf("'%s' and '%s' and not structurally equivalent", t1.String(), t2.String())
+	}
+
+	if !TypeStrictNameEquivalence(t1.Underlying(), t2.Underlying()) {
+		return false, fmt.Errorf("'%s' and '%s' and not strictly name equivalent", t1.String(), t2.String())
+	}
+
+	return true, nil
+}
+
+// TypeLooseCompare does unsigned vs signed checks
+func TypeLooseCompare(t1 Type, t2 Type) (bool, error) {
+	t1 = getFirstNonTypeAlias(t1)
+	t2 = getFirstNonTypeAlias(t2)
+	if !typeEqual(t1, t2) {
+		return false, fmt.Errorf("")
+	}
+
+	switch v1 := t1.(type) {
+	case *IntegerType:
+		v2 := t2.(*IntegerType)
+		if v1.Signed != v2.Signed {
+			return false, fmt.Errorf("integer sign mismatch: '%s', '%s'", v1.String(), v2.String())
+		}
+
+		return v1.Bytes == v2.Bytes, fmt.Errorf("integer signed mismatch: '%s', '%s'", v1.String(), v2.String())
 	case *StaticArrayType:
 		v2 := t2.(*StaticArrayType)
 		countCheck := (v1.IsInferredSizeArray() || v2.IsInferredSizeArray()) || (v1.Count == v2.Count)
-		ok, err := TypeCompare(t1.Underlying(), t2.Underlying())
+		ok, err := TypeLooseCompare(t1.Underlying(), t2.Underlying())
 
 		return countCheck && ok, err
-	default:
-		panic(fmt.Sprintf("TypeCompatible: unknown type %T", t1))
+	}
+
+	if !TypeStructuralEquivalence(t1.Underlying(), t2.Underlying()) {
+		return false, fmt.Errorf("'%s' and '%s' and not structurally equivalent", t1.String(), t2.String())
 	}
 
 	return true, nil
 }
 
 func CanExplicitCast(caster Type, castee Type) (bool, error) {
-	for {
-		strictAlias1 := getFirstStrictAlias(caster)
-		strictAlias2 := getFirstStrictAlias(castee)
-
-		if (strictAlias1 == nil) || (strictAlias2 == nil) {
-			break
-		}
-
-		if strictAlias1.(*AliasType).AliasName != strictAlias2.(*AliasType).AliasName {
-			return false, fmt.Errorf("strict alias types are different")
-		}
-
-		caster = strictAlias1.Underlying()
-		castee = strictAlias2.Underlying()
-	}
+	caster = getFirstNonTypeAlias(caster)
+	castee = getFirstNonTypeAlias(castee)
 
 	{
 		_, isCasterPointer := caster.(*PointerType)
 		if isCasterPointer {
-			_, isCasterVoidPointer := caster.Underlying().(*PointerType)
+			_, isCasterVoidPointer := caster.Underlying().(*PointerType).Underlying().(*VoidType)
 			_, isCasteePointer := castee.(*PointerType)
 			if isCasterVoidPointer && isCasteePointer {
 				return true, nil
@@ -475,38 +493,34 @@ func CanExplicitCast(caster Type, castee Type) (bool, error) {
 		}
 	}
 
-	{
-		v, isCasterStruct := caster.(*StructType)
-		if isCasterStruct && v.IsString() {
+	a1, isCasterArray := caster.(*StaticArrayType)
+	a2, isCasteeArray := castee.(*StaticArrayType)
+	if isCasterArray && isCasteeArray {
+		if a1.IsInferredSizeArray() || a2.IsInferredSizeArray() {
 			return true, nil
 		}
 
-		_, isCasterInteger := caster.(*IntegerType)
-		_, isCasteeFloat := castee.(*FloatType)
-		if isCasterInteger && isCasteeFloat {
-			return true, nil
-		}
+		return a1.Count == a2.Count, fmt.Errorf("can't perform explicit cast to `%s` from `%s`", caster.String(), castee.String())
+	}
 
-		_, isCasterFloat := caster.(*FloatType)
-		_, isCasteeInteger := castee.(*IntegerType)
-		if isCasterFloat && isCasteeInteger {
+	v, isCasterStruct := caster.(*StructType)
+	if isCasterStruct && v.IsString() {
+		if castee.IsStruct() || (!castee.IsStruct() && !castee.IsArray()) {
 			return true, nil
 		}
 	}
 
-	/*
-		{
-			bool is_number_to_number_cast_allowed = (
-			(type_is_signed(caster)   && type_is_unsigned(castee)) ||
-				(type_is_unsigned(caster) && type_is_unsigned(castee)) ||
-				(type_is_unsigned(caster) && type_is_signed(castee))   ||
-				(type_is_signed(caster)   && type_is_signed(castee))
-			);
-			if (is_number_to_number_cast_allowed) return true;
+	s1, isCasterStruct := caster.(*StructType)
+	s2, isCasteeStruct := castee.(*StructType)
+	if isCasterStruct && isCasteeStruct {
+		if s1.StructName == s2.StructName {
+			return true, nil
 		}
-	*/
 
-	return TypeCompare(caster, castee)
+		return TypeStructuralEquivalence(caster, castee), fmt.Errorf("can't perform explicit cast to `%s` from `%s` because they are not structurally equivalent", caster.String(), castee.String())
+	}
+
+	return true, nil
 }
 
 func GetBuiltin(s string) (Type, bool) {
@@ -549,21 +563,8 @@ func CanDereference(t Type) bool {
 
 // CanImplicitCast Does NOT take structural equivalence into account
 func CanImplicitCast(caster Type, castee Type) (bool, error) {
-	for {
-		strictAlias1 := getFirstStrictAlias(caster)
-		strictAlias2 := getFirstStrictAlias(castee)
-
-		if (strictAlias1 == nil) || (strictAlias2 == nil) {
-			break
-		}
-
-		if strictAlias1.(*AliasType).AliasName != strictAlias2.(*AliasType).AliasName {
-			return false, fmt.Errorf("can't perform implicitly to type `%s` from `%s`\n", caster.String(), castee.String())
-		}
-
-		caster = strictAlias1.Underlying()
-		castee = strictAlias2.Underlying()
-	}
+	caster = getFirstNonTypeAlias(caster)
+	castee = getFirstNonTypeAlias(castee)
 
 	{
 		_, isCasterPointer := caster.(*PointerType)
@@ -576,16 +577,35 @@ func CanImplicitCast(caster Type, castee Type) (bool, error) {
 		}
 	}
 
-	i1, isCasterInteger := caster.(*IntegerType)
-	i2, isCasteeInteger := castee.(*IntegerType)
-	if isCasterInteger && isCasteeInteger {
-		return i1.Bytes >= i2.Bytes, fmt.Errorf("can't perform narrowing implicit cast to `%s` from `%s`\n", caster.String(), castee.String())
+	v, isCasterStruct := caster.(*StructType)
+	if isCasterStruct && v.IsString() {
+		return true, nil
 	}
 
+	i1, isCasterInteger := caster.(*IntegerType)
 	f1, isCasterFloat := caster.(*FloatType)
+
+	i2, isCasteeInteger := castee.(*IntegerType)
 	f2, isCasteeFloat := castee.(*FloatType)
+
+	if isCasterInteger && isCasteeFloat {
+		return i1.Bytes >= f2.Bytes, fmt.Errorf("can't perform narrowing implicit cast because of sign mismatch '%s', '%s'", i1.String(), f2.String())
+	}
+
+	if isCasterFloat && isCasteeInteger {
+		return f1.Bytes >= i2.Bytes, fmt.Errorf("can't perform narrowing implicit cast because of sign mismatch '%s', '%s'", f1.String(), i2.String())
+	}
+
+	if isCasterInteger && isCasteeInteger {
+		if i1.Signed != i2.Signed {
+			return false, fmt.Errorf("can't perform narrowing implicit cast because of sign mismatch '%s', '%s'", i1.String(), i2.String())
+		}
+
+		return i1.Bytes >= i2.Bytes, fmt.Errorf("can't perform narrowing implicit cast because of sign mismatch '%s', '%s'", i1.String(), i2.String())
+	}
+
 	if isCasterFloat && isCasteeFloat {
-		return f1.Bytes >= f2.Bytes, fmt.Errorf("can't perform narrowing implicit cast to `%s` from `%s`\n", caster.String(), castee.String())
+		return f1.Bytes >= f2.Bytes, fmt.Errorf("can't perform narrowing implicit cast because of sign mismatch '%s', '%s'", f1.String(), f2.String())
 	}
 
 	a1, isCasterArray := caster.(*StaticArrayType)
@@ -595,27 +615,10 @@ func CanImplicitCast(caster Type, castee Type) (bool, error) {
 			return true, nil
 		}
 
-		return false, fmt.Errorf("can't perform implicit cast to `%s` from `%s`\n", caster.String(), castee.String())
+		return a1.Count == a2.Count, fmt.Errorf("can't perform implicit cast to `%s` from `%s`", caster.String(), castee.String())
 	}
 
-	s1, isCasterStruct := caster.(*StructType)
-	s2, isCasteeStruct := castee.(*StructType)
-	if isCasterStruct && isCasteeStruct {
-		if s1.StructName == s2.StructName {
-			return true, nil
-		}
-
-		return false, fmt.Errorf("can't perform implicit cast to `%s` from `%s`\n", caster.String(), castee.String())
-	}
-
-	// if castee is a IntegerType or a FloatingType
-	// and the caster is a Integer Type or Floating Type
-
-	// this case is like if its a parameter
-	// f(a: u64)
-	// CanImplicitCast(param.DeclType, argument.DeclType, argument.Expr)
-
-	return TypeSafeStructurallyStrictCompatible(caster, castee)
+	return TypeStrictNameEquivalence(caster, castee), fmt.Errorf("")
 }
 
 type TypeKind int
