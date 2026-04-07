@@ -109,7 +109,21 @@ func (parser *Parser) parsePrimary() AST.Expression {
 	return nil
 }
 
-// <Unary>      ::= ('cast(..)') <typecast> | <primary>
+// <Unary>      ::= ('+'|'-'|'!') <unary> | <primary>
+func (parser *Parser) parseUnaryExpression() AST.Expression {
+	ret := &AST.ExpressionUnary{}
+
+	if parser.consumeOnMatch(Token.NOT) || parser.consumeOnMatch(Token.MINUS) || parser.consumeOnMatch(Token.PLUS) {
+		ret.Operator = parser.previousToken()
+		ret.Operand = parser.parseUnaryExpression()
+
+		return ret
+	}
+
+	return parser.parsePrimary()
+}
+
+// <typecast>      ::= 'cast(..)' <typecast> | <unary>
 func (parser *Parser) parseTypeCastExpression() AST.Expression {
 	ret := &AST.ExpressionTypeCast{}
 
@@ -124,30 +138,16 @@ func (parser *Parser) parseTypeCastExpression() AST.Expression {
 		return ret
 	}
 
-	return parser.parsePrimary()
+	return parser.parseUnaryExpression()
 }
 
-// <Unary>      ::= ('+'|'-'|'!') <unary> | <typeCast>
-func (parser *Parser) parseUnaryExpression() AST.Expression {
-	ret := &AST.ExpressionUnary{}
-
-	if parser.consumeOnMatch(Token.NOT) || parser.consumeOnMatch(Token.MINUS) || parser.consumeOnMatch(Token.PLUS) {
-		ret.Operator = parser.previousToken()
-		ret.Operand = parser.parseUnaryExpression()
-
-		return ret
-	}
-
-	return parser.parseTypeCastExpression()
-}
-
-// <multiplicative>     ::= <Unary> (('*'|'/') <Unary>)*
+// <multiplicative>     ::= <typecast> (('*'|'/') <typecast>)*
 func (parser *Parser) parseMultiplicativeExpression() AST.Expression {
-	expr := parser.parseUnaryExpression()
+	expr := parser.parseTypeCastExpression()
 
 	for parser.consumeOnMatch(Token.STAR) || parser.consumeOnMatch(Token.DIVISION) {
 		op := parser.previousToken()
-		right := parser.parseUnaryExpression()
+		right := parser.parseTypeCastExpression()
 		expr = &AST.ExpressionBinary{
 			Operator: op,
 			Left:     expr,
