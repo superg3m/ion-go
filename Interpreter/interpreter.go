@@ -312,6 +312,29 @@ func interpretExpression(e AST.Expression, scope *Scope) AST.Expression {
 				}
 			}
 
+		case *AST.ExpressionBoolean:
+			if v.CastType.IsString() {
+				strValue := "false"
+				if ev.Value {
+					strValue = "true"
+				}
+
+				v.Expr = &AST.ExpressionString{
+					Value: fmt.Sprintf("%s", strValue),
+				}
+			}
+
+			if v.CastType.IsInteger() {
+				intValue := 0
+				if ev.Value {
+					intValue = 1
+				}
+
+				v.Expr = &AST.ExpressionInteger{
+					Value: intValue,
+				}
+			}
+
 		default:
 			panic(fmt.Sprintf("undefined expression %T", v.Expr))
 		}

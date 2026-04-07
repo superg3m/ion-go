@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"ion-go/Interpreter"
 	"ion-go/Lexer"
 	"ion-go/Parser"
 	"ion-go/TypeChecker"
@@ -44,12 +45,12 @@ func main() {
 	testDirectory := "./IonSource"
 
 	for _, file := range getIonFileList(testDirectory) {
-		fmt.Printf("Processing: %s\n", file)
+		fmt.Printf("\nProcessing: %s\n", file)
 
 		tokenStream := Lexer.GenerateTokenStream(file)
 		program := Parser.ParseProgram(tokenStream)
 		TypeChecker.TypeCheckProgram(program)
 		// JSON.PrettyPrint(program)
-		// Interpreter.InterpretProgram(program)
+		Interpreter.InterpretProgram(program)
 	}
 }
