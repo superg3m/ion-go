@@ -109,7 +109,25 @@ func (parser *Parser) parsePrimary() AST.Expression {
 	return nil
 }
 
-// <Unary>      ::= ('+'|'-'|'!') <unary> | <Primary>
+// <Unary>      ::= ('cast(..)') <typecast> | <primary>
+func (parser *Parser) parseTypeCastExpression() AST.Expression {
+	ret := &AST.ExpressionTypeCast{}
+
+	if parser.consumeOnMatch(Token.CAST) {
+		ret.Tok = parser.previousToken()
+		parser.expect(Token.LEFT_PAREN)
+		castType := parser.parseType()
+		parser.expect(Token.RIGHT_PAREN)
+		ret.CastType = castType
+		ret.Expr = parser.parseTypeCastExpression()
+
+		return ret
+	}
+
+	return parser.parsePrimary()
+}
+
+// <Unary>      ::= ('+'|'-'|'!') <unary> | <typeCast>
 func (parser *Parser) parseUnaryExpression() AST.Expression {
 	ret := &AST.ExpressionUnary{}
 
@@ -120,7 +138,7 @@ func (parser *Parser) parseUnaryExpression() AST.Expression {
 		return ret
 	}
 
-	return parser.parsePrimary()
+	return parser.parseTypeCastExpression()
 }
 
 // <multiplicative>     ::= <Unary> (('*'|'/') <Unary>)*
@@ -282,18 +300,7 @@ func (parser *Parser) parseExpression() AST.Expression {
 		return parser.parseArrayExpression()
 	} else if current.Kind == Token.IDENTIFIER && next.Kind == Token.DOT && next2.Kind == Token.LEFT_CURLY {
 		return parser.parseStructExpression()
-	} else if current.Kind == Token.CAST {
-		cast := parser.expect(Token.CAST)
-		parser.expect(Token.LEFT_PAREN)
-		castType := parser.parseType()
-		parser.expect(Token.RIGHT_PAREN)
-
-		return &AST.ExpressionTypeCast{
-			Tok:      cast,
-			CastType: castType,
-			Expr:     parser.parseExpression(),
-		}
-	} else {
-		return parser.parseLogicalExpression()
 	}
+
+	return parser.parseLogicalExpression()
 }
