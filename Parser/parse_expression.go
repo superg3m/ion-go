@@ -43,9 +43,14 @@ func (parser *Parser) parseAccessChainExpression(token Token.Token) *AST.Express
 		}
 
 		if parser.consumeOnMatch(Token.LEFT_BRACKET) {
+			index := parser.parseExpression()
+			if index == nil {
+				parser.reportError("failed to parse array access missing index expression")
+			}
+
 			keys = append(keys, &AST.ExpressionArrayAccess{
 				Tok:   token,
-				Index: parser.parseExpression(),
+				Index: index,
 			})
 			parser.expect(Token.RIGHT_BRACKET)
 		}
