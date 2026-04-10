@@ -39,49 +39,53 @@ const (
 	R15
 )
 
-// Don't allow you to allocate special register for example
+// RegisterAllocator Don't allow you to allocate special register
 type RegisterAllocator interface {
-	AcquireInteger32Register() int
-	AcquireInteger64Register() int
-	ReleaseInteger32Register() int
-	ReleaseInteger64Register() int
+	AcquireIntegerRegister() IntegerRegister
+	ReleaseIntegerRegister(register IntegerRegister)
 	IsIntegerRegisterAllocated(register IntegerRegister) bool
 
 	GetInteger32RegisterName(register IntegerRegister) string
 	GetInteger64RegisterName(register IntegerRegister) string
 }
 
-type IntegerRegisterAllocationData struct {
+type IntegerRegisterData struct {
 	Allocated             bool
 	Integer32RegisterName string
 	Integer64RegisterName string
 }
 
+// IntelMicrosoftRegisterAllocator https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170
 type IntelMicrosoftRegisterAllocator struct {
 	CallerRegisters []IntegerRegister
 	CalleeRegisters []IntegerRegister
 
-	IntegerRegisterMap map[IntegerRegister]IntegerRegisterAllocationData
+	IntegerParameterRegisterMap map[IntegerRegister]IntegerRegisterData
+	IntegerRegisterMap          map[IntegerRegister]IntegerRegisterData
 }
 
-func (r *IntelMicrosoftRegisterAllocator) AcquireInteger32Register() int {
-	//TODO implement me
-	panic("implement me")
+func (r *IntelMicrosoftRegisterAllocator) AcquireIntegerRegister() IntegerRegister {
+	for register, registerData := range r.IntegerRegisterMap {
+		if registerData.Allocated {
+			continue
+		}
+
+		registerData.Allocated = true
+		return register
+	}
+
+	panic("Failed to acquire integer register")
 }
 
-func (r *IntelMicrosoftRegisterAllocator) AcquireInteger64Register() int {
-	//TODO implement me
-	panic("implement me")
-}
+func (r *IntelMicrosoftRegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
+	if !r.IntegerRegisterMap[register].Allocated {
+		panic("Failed to release integer register, not allocated!")
+	}
 
-func (r *IntelMicrosoftRegisterAllocator) ReleaseInteger32Register() int {
-	//TODO implement me
-	panic("implement me")
-}
+	d := r.IntegerRegisterMap[register]
+	d.Allocated = false
 
-func (r *IntelMicrosoftRegisterAllocator) ReleaseInteger64Register() int {
-	//TODO implement me
-	panic("implement me")
+	r.IntegerRegisterMap[register] = d
 }
 
 func (r *IntelMicrosoftRegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
@@ -104,12 +108,8 @@ func (r *IntelMicrosoftRegisterAllocator) GetInteger64RegisterName(register Inte
 	return r.IntegerRegisterMap[register].Integer64RegisterName
 }
 
-// Syntax: Intel
+// NewMicrosoft_X64_RegisterAllocator Syntax: Intel
 func NewMicrosoft_X64_RegisterAllocator() RegisterAllocator {
-	// gonna have to add the floating point registers to caller registers
-	// and callee registers
-	// https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170
-	// https://wiki.osdev.org/Calling_Conventions#System_V_ABI
 	return &IntelMicrosoftRegisterAllocator{
 		[]IntegerRegister{
 			RAX, RCX, RDX, R8, R10, R11,
@@ -118,24 +118,28 @@ func NewMicrosoft_X64_RegisterAllocator() RegisterAllocator {
 			R12, R13, R14, R15, RDI, RSI, RBX, RBP, RSP,
 		},
 
-		map[IntegerRegister]IntegerRegisterAllocationData{
-			RAX: {false, "eax", "rax"},
-			RDI: {false, "rdi", "edi"},
+		// PARAMETERS: 1st: RCX | 2nd: RDX | 3rd: R8 | 4th: R9 | STACK...
+		map[IntegerRegister]IntegerRegisterData{
+			RCX: {false, "ecx", "rcx"},
+			RDX: {false, "esi", "rdx"},
+			R8:  {false, "r8d", "r8"},
+			R9:  {false, "r9d", "r9"},
 		},
-		/*
-			[]string{
-				"%ebx", "%ecx", "%r8d", "%r9d",
-				"%r10d", "%r11d", "%r12d", "%r13d",
-				"%r14d", "%r15d",
-			},
-			[]string{
-				"%rbx", "%rcx", "%r8", "%r9",
-				"%r10", "%r11", "%r12", "%r13",
-				"%r14", "%r15",
-			},
-		*/
+		map[IntegerRegister]IntegerRegisterData{
+			RDI: {false, "edi", "rdi"},
+			RSI: {false, "esi", "rsi"},
+			RBX: {false, "ebx", "rbx"},
+			R10: {false, "r10d", "r10"},
+			R11: {false, "r11d", "r11"},
+			R12: {false, "r12d", "r12"},
+			R13: {false, "r13d", "r13"},
+			R14: {false, "r14d", "r14"},
+			R15: {false, "r15d", "r15"},
+		},
 	}
 }
+
+// -----------
 
 /*
 int callerSavedRegisters[NUM_CALLER_SAVED] = {ECX, R8D, R9D, R10D, R11D};
@@ -158,7 +162,9 @@ int calleeSavedRegisters[NUM_CALLEE_SAVED] = {EBX, R12D, R13D, R14D, R15D};
 %r13 	Local variable, callee-saved 	%r13d 	%r13w 	%r13b
 %r14 	Local variable, callee-saved 	%r14d 	%r14w 	%r14b
 %r15 	Local variable, callee-saved 	%r15d 	%r15w 	%r15b
-*///
+
+// https://wiki.osdev.org/Calling_Conventions#System_V_ABI
+*/
 
 // Syntax: AT&T
 /*
