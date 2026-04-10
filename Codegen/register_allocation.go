@@ -58,34 +58,7 @@ type IntegerRegisterData struct {
 	Integer64RegisterName string
 }
 
-// ---
-
-/*
-int callerSavedRegisters[NUM_CALLER_SAVED] = {ECX, R8D, R9D, R10D, R11D};
-int calleeSavedRegisters[NUM_CALLEE_SAVED] = {EBX, R12D, R13D, R14D, R15D};
-
-%rax 	Return value, caller-saved 	%eax 	%ax 	%al
-%rdi 	1st argument, caller-saved 	%edi 	%di 	%dil
-%rsi 	2nd argument, caller-saved 	%esi 	%si 	%sil
-%rdx 	3rd argument, caller-saved 	%edx 	%dx 	%dl
-%rcx 	4th argument, caller-saved 	%ecx 	%cx 	%cl
-%r8 	5th argument, caller-saved 	%r8d 	%r8w 	%r8b
-%r9 	6th argument, caller-saved 	%r9d 	%r9w 	%r9b
-%r10 	Scratch/temporary, caller-saved 	%r10d 	%r10w 	%r10b
-%r11 	Scratch/temporary, caller-saved
-
-%rsp 	Stack pointer, callee-saved 	%esp 	%sp 	%spl
-%rbx 	Local variable, callee-saved 	%ebx 	%bx 	%bl
-%rbp 	Local variable, callee-saved 	%ebp 	%bp 	%bpl
-%r12 	Local variable, callee-saved 	%r12d 	%r12w 	%r12b
-%r13 	Local variable, callee-saved 	%r13d 	%r13w 	%r13b
-%r14 	Local variable, callee-saved 	%r14d 	%r14w 	%r14b
-%r15 	Local variable, callee-saved 	%r15d 	%r15w 	%r15b
-
-// https://wiki.osdev.org/Calling_Conventions#System_V_ABI
-*/
-
-type AMD64SystemVRegisterAllocator struct {
+type ATTSystemVRegisterAllocator struct {
 	CallerRegisters []IntegerRegister
 	CalleeRegisters []IntegerRegister
 
@@ -93,28 +66,30 @@ type AMD64SystemVRegisterAllocator struct {
 	IntegerRegisterMap          map[IntegerRegister]IntegerRegisterData
 }
 
-func (r *AMD64SystemVRegisterAllocator) GetCallerSavedIntegerRegister() []IntegerRegister {
+func (r *ATTSystemVRegisterAllocator) GetCallerSavedIntegerRegister() []IntegerRegister {
 	return []IntegerRegister{RCX, R8, R9, R10, R11}
 }
 
-func (r *AMD64SystemVRegisterAllocator) GetCalleeSavedIntegerRegister() []IntegerRegister {
+func (r *ATTSystemVRegisterAllocator) GetCalleeSavedIntegerRegister() []IntegerRegister {
 	return []IntegerRegister{RBX, R12, R13, R14, R15}
 }
 
-func (r *AMD64SystemVRegisterAllocator) AcquireIntegerRegister() IntegerRegister {
+func (r *ATTSystemVRegisterAllocator) AcquireIntegerRegister() IntegerRegister {
 	for register, registerData := range r.IntegerRegisterMap {
 		if registerData.Allocated {
 			continue
 		}
 
 		registerData.Allocated = true
+		r.IntegerRegisterMap[register] = registerData
+		
 		return register
 	}
 
 	panic("Failed to acquire integer register")
 }
 
-func (r *AMD64SystemVRegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
+func (r *ATTSystemVRegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
 	if !r.IntegerRegisterMap[register].Allocated {
 		panic("Failed to release integer register, not allocated!")
 	}
@@ -125,11 +100,11 @@ func (r *AMD64SystemVRegisterAllocator) ReleaseIntegerRegister(register IntegerR
 	r.IntegerRegisterMap[register] = d
 }
 
-func (r *AMD64SystemVRegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
+func (r *ATTSystemVRegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
 	return r.IntegerRegisterMap[register].Allocated
 }
 
-func (r *AMD64SystemVRegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
+func (r *ATTSystemVRegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
 	if !r.IsIntegerRegisterAllocated(register) {
 		panic("register not allocated")
 	}
@@ -137,7 +112,7 @@ func (r *AMD64SystemVRegisterAllocator) GetInteger32RegisterName(register Intege
 	return r.IntegerRegisterMap[register].Integer32RegisterName
 }
 
-func (r *AMD64SystemVRegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
+func (r *ATTSystemVRegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
 	if !r.IsIntegerRegisterAllocated(register) {
 		panic("register not allocated")
 	}
@@ -147,7 +122,7 @@ func (r *AMD64SystemVRegisterAllocator) GetInteger64RegisterName(register Intege
 
 // NewAMD64SystemVRegisterAllocator Syntax: AT&T | https://wiki.osdev.org/Calling_Conventions#System_V_ABI
 func NewAMD64SystemVRegisterAllocator() RegisterAllocator {
-	return &AMD64SystemVRegisterAllocator{
+	return &ATTSystemVRegisterAllocator{
 		[]IntegerRegister{
 			RCX, R8, R9, R10, R11,
 		},
@@ -264,5 +239,3 @@ func NewMicrosoft_X64_RegisterAllocator() RegisterAllocator {
 }
 
 */
-
-// -----------

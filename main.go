@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"io/fs"
-	"ion-go/Interpreter"
+	"ion-go/Codegen"
 	"ion-go/Lexer"
 	"ion-go/Parser"
 	"ion-go/TypeChecker"
@@ -51,6 +51,11 @@ func main() {
 		program := Parser.ParseProgram(tokenStream)
 		TypeChecker.TypeCheckProgram(program)
 		// JSON.PrettyPrint(program)
-		Interpreter.InterpretProgram(program)
+		// Interpreter.InterpretProgram(program)
 	}
+
+	a := Codegen.NewATTAssemblyEmitter()
+	// a.EmitMainFunction()
+	a.EmitLoadIntegerConstant(6)
+	a.EmitInstructions("file.s")
 }
