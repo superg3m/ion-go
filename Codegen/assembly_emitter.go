@@ -1,6 +1,9 @@
 package Codegen
 
 type AssemblyEmitter interface {
+	// EmitLoadIntegerConstant()
+	// EmitAssignment()
+
 	// EmitFunctionCallSite()
 	// EmitFunctionBody()
 	// EmitAssignment()
@@ -16,12 +19,9 @@ type AssemblyEmitter interface {
 	// EmitBitwiseNot()
 
 	// EmitComputeVariableAddress()
-	// EmitLoadIntegerConstant()
 
 	// for like strings .ascii
 	// CreateDataDeclaration
-
-	// EmitAssignment()
 
 	// EmitFunctionPrologue()
 	// EmitFunctionEpilogue()
