@@ -58,23 +58,20 @@ type IntegerRegisterData struct {
 	Integer64RegisterName string
 }
 
-type ATTSystemVRegisterAllocator struct {
-	CallerRegisters []IntegerRegister
-	CalleeRegisters []IntegerRegister
-
+type ATTRegisterAllocator struct {
 	IntegerParameterRegisterMap map[IntegerRegister]IntegerRegisterData
 	IntegerRegisterMap          map[IntegerRegister]IntegerRegisterData
 }
 
-func (r *ATTSystemVRegisterAllocator) GetCallerSavedIntegerRegister() []IntegerRegister {
+func (r *ATTRegisterAllocator) GetCallerSavedIntegerRegister() []IntegerRegister {
 	return []IntegerRegister{RCX, R8, R9, R10, R11}
 }
 
-func (r *ATTSystemVRegisterAllocator) GetCalleeSavedIntegerRegister() []IntegerRegister {
+func (r *ATTRegisterAllocator) GetCalleeSavedIntegerRegister() []IntegerRegister {
 	return []IntegerRegister{RBX, R12, R13, R14, R15}
 }
 
-func (r *ATTSystemVRegisterAllocator) AcquireIntegerRegister() IntegerRegister {
+func (r *ATTRegisterAllocator) AcquireIntegerRegister() IntegerRegister {
 	for register, registerData := range r.IntegerRegisterMap {
 		if registerData.Allocated {
 			continue
@@ -82,14 +79,14 @@ func (r *ATTSystemVRegisterAllocator) AcquireIntegerRegister() IntegerRegister {
 
 		registerData.Allocated = true
 		r.IntegerRegisterMap[register] = registerData
-		
+
 		return register
 	}
 
 	panic("Failed to acquire integer register")
 }
 
-func (r *ATTSystemVRegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
+func (r *ATTRegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
 	if !r.IntegerRegisterMap[register].Allocated {
 		panic("Failed to release integer register, not allocated!")
 	}
@@ -100,11 +97,11 @@ func (r *ATTSystemVRegisterAllocator) ReleaseIntegerRegister(register IntegerReg
 	r.IntegerRegisterMap[register] = d
 }
 
-func (r *ATTSystemVRegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
+func (r *ATTRegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
 	return r.IntegerRegisterMap[register].Allocated
 }
 
-func (r *ATTSystemVRegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
+func (r *ATTRegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
 	if !r.IsIntegerRegisterAllocated(register) {
 		panic("register not allocated")
 	}
@@ -112,7 +109,7 @@ func (r *ATTSystemVRegisterAllocator) GetInteger32RegisterName(register IntegerR
 	return r.IntegerRegisterMap[register].Integer32RegisterName
 }
 
-func (r *ATTSystemVRegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
+func (r *ATTRegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
 	if !r.IsIntegerRegisterAllocated(register) {
 		panic("register not allocated")
 	}
@@ -121,15 +118,11 @@ func (r *ATTSystemVRegisterAllocator) GetInteger64RegisterName(register IntegerR
 }
 
 // NewAMD64SystemVRegisterAllocator Syntax: AT&T | https://wiki.osdev.org/Calling_Conventions#System_V_ABI
-func NewAMD64SystemVRegisterAllocator() RegisterAllocator {
-	return &ATTSystemVRegisterAllocator{
-		[]IntegerRegister{
-			RCX, R8, R9, R10, R11,
-		},
-		[]IntegerRegister{
-			RBX, R12, R13, R14, R15,
-		},
+func NewATTRegisterAllocator(convention CallingConvention) RegisterAllocator {
+	// convention.GetCalleeList
+	// convention.GetCallerList
 
+	return &ATTRegisterAllocator{
 		// PARAMETERS: rdi, rsi, rdx, rcx, r8, and r9
 		map[IntegerRegister]IntegerRegisterData{
 			RDI: {false, "%edi", "%rdi"},
@@ -153,30 +146,40 @@ func NewAMD64SystemVRegisterAllocator() RegisterAllocator {
 
 // ---
 
-/*
 // IntelMicrosoftX64RegisterAllocator https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170
-type IntelMicrosoftX64RegisterAllocator struct {
-	CallerRegisters []IntegerRegister
-	CalleeRegisters []IntegerRegister
-
+type IntelRegisterAllocator struct {
 	IntegerParameterRegisterMap map[IntegerRegister]IntegerRegisterData
 	IntegerRegisterMap          map[IntegerRegister]IntegerRegisterData
 }
 
-func (r *IntelMicrosoftX64RegisterAllocator) AcquireIntegerRegister() IntegerRegister {
+func (r *IntelRegisterAllocator) GetCallerSavedIntegerRegister() []IntegerRegister {
+	return []IntegerRegister{
+		RAX, RCX, RDX, R8, R10, R11,
+	}
+}
+
+func (r *IntelRegisterAllocator) GetCalleeSavedIntegerRegister() []IntegerRegister {
+	return []IntegerRegister{
+		R12, R13, R14, R15, RDI, RSI, RBX, RBP, RSP,
+	}
+}
+
+func (r *IntelRegisterAllocator) AcquireIntegerRegister() IntegerRegister {
 	for register, registerData := range r.IntegerRegisterMap {
 		if registerData.Allocated {
 			continue
 		}
 
 		registerData.Allocated = true
+		r.IntegerRegisterMap[register] = registerData
+
 		return register
 	}
 
 	panic("Failed to acquire integer register")
 }
 
-func (r *IntelMicrosoftX64RegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
+func (r *IntelRegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
 	if !r.IntegerRegisterMap[register].Allocated {
 		panic("Failed to release integer register, not allocated!")
 	}
@@ -187,11 +190,11 @@ func (r *IntelMicrosoftX64RegisterAllocator) ReleaseIntegerRegister(register Int
 	r.IntegerRegisterMap[register] = d
 }
 
-func (r *IntelMicrosoftX64RegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
+func (r *IntelRegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
 	return r.IntegerRegisterMap[register].Allocated
 }
 
-func (r *IntelMicrosoftX64RegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
+func (r *IntelRegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
 	if !r.IsIntegerRegisterAllocated(register) {
 		panic("register not allocated")
 	}
@@ -199,7 +202,7 @@ func (r *IntelMicrosoftX64RegisterAllocator) GetInteger32RegisterName(register I
 	return r.IntegerRegisterMap[register].Integer32RegisterName
 }
 
-func (r *IntelMicrosoftX64RegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
+func (r *IntelRegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
 	if !r.IsIntegerRegisterAllocated(register) {
 		panic("register not allocated")
 	}
@@ -208,15 +211,8 @@ func (r *IntelMicrosoftX64RegisterAllocator) GetInteger64RegisterName(register I
 }
 
 // NewMicrosoft_X64_RegisterAllocator Syntax: Intel
-func NewMicrosoft_X64_RegisterAllocator() RegisterAllocator {
-	return &IntelMicrosoftX64RegisterAllocator{
-		[]IntegerRegister{
-			RAX, RCX, RDX, R8, R10, R11,
-		},
-		[]IntegerRegister{
-			R12, R13, R14, R15, RDI, RSI, RBX, RBP, RSP,
-		},
-
+func NewIntelRegisterAllocator(cc CallingConvention) RegisterAllocator {
+	return &IntelRegisterAllocator{
 		// PARAMETERS: 1st: RCX | 2nd: RDX | 3rd: R8 | 4th: R9 | STACK...
 		map[IntegerRegister]IntegerRegisterData{
 			RCX: {false, "ecx", "rcx"},
@@ -237,5 +233,3 @@ func NewMicrosoft_X64_RegisterAllocator() RegisterAllocator {
 		},
 	}
 }
-
-*/

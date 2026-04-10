@@ -1,1 +1,1 @@
-	movl $6, %r12d
+	mov r10d, 6

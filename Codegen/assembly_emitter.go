@@ -2,12 +2,17 @@ package Codegen
 
 import (
 	"os"
-	"strconv"
 )
 
 type AssemblyEmitter interface {
 	EmitInstructions(filepath string)
 	EmitLoadIntegerConstant(integerConstant int) IntegerRegister
+	AddInstruction(inst string)
+
+	GetRegisterAllocator() RegisterAllocator
+	GetCallingConvention() CallingConvention
+	GetSyntax() Syntax
+
 	// EmitAssignment()
 
 	// EmitFunctionExit()
@@ -43,15 +48,36 @@ type AssemblyEmitter interface {
 	// GetNextGenericLabel() string
 }
 
-type ATTSystemVAssemblyEmitter struct {
+type AMD64AssemblyEmitter struct {
 	StringConstantCount int
 	LabelCount          int
 
-	instructions      []string
-	registerAllocator *ATTSystemVRegisterAllocator
+	instructions []string
+
+	syntax            Syntax
+	registerAllocator RegisterAllocator
+	callingConvention CallingConvention
+
+	// instructions
 }
 
-func (e *ATTSystemVAssemblyEmitter) EmitInstructions(filepath string) {
+func (e *AMD64AssemblyEmitter) GetCallingConvention() CallingConvention {
+	return e.callingConvention
+}
+
+func (e *AMD64AssemblyEmitter) GetSyntax() Syntax {
+	return e.syntax
+}
+
+func (e *AMD64AssemblyEmitter) AddInstruction(inst string) {
+	e.instructions = append(e.instructions, inst)
+}
+
+func (e *AMD64AssemblyEmitter) GetRegisterAllocator() RegisterAllocator {
+	return e.registerAllocator
+}
+
+func (e *AMD64AssemblyEmitter) EmitInstructions(filepath string) {
 	f, _ := os.Create(filepath)
 	for _, inst := range e.instructions {
 		_, err := f.WriteString(inst + "\n")
@@ -62,23 +88,37 @@ func (e *ATTSystemVAssemblyEmitter) EmitInstructions(filepath string) {
 }
 
 // EmitLoadIntegerConstant this MOV instruction should just be a constant probably
-func (e *ATTSystemVAssemblyEmitter) EmitLoadIntegerConstant(integerConstant int) IntegerRegister {
+func (e *AMD64AssemblyEmitter) EmitLoadIntegerConstant(integerConstant int) IntegerRegister {
 	register := e.registerAllocator.AcquireIntegerRegister()
-	registerName := e.registerAllocator.GetInteger32RegisterName(register)
-	e.AddInstruction("\tmovl " + "$" + strconv.Itoa(integerConstant) + ", " + registerName)
+	e.AddInstruction(e.syntax.IMOVL(register, e.syntax.IntegerConstant(integerConstant)))
 
 	return register
 }
 
-func (e *ATTSystemVAssemblyEmitter) AddInstruction(instruction string) {
-	e.instructions = append(e.instructions, instruction)
-}
+func NewAMD64AssemblyEmitter(syntaxType SyntaxType, cc CallingConventionType) AssemblyEmitter {
+	var registerAllocator RegisterAllocator
+	var callingConvention CallingConvention
+	var syntax Syntax
+	if cc == SYSYEM_V {
+		callingConvention = NewSystemVCallingConvention()
+	} else if cc == MICROSOFT_X64 {
+		callingConvention = NewMicrosoftX64CallingConvention()
+	}
 
-func NewATTAssemblyEmitter() AssemblyEmitter {
-	return &ATTSystemVAssemblyEmitter{
+	if syntaxType == ATT {
+		registerAllocator = NewATTRegisterAllocator(callingConvention)
+		syntax = NewATTSyntax(registerAllocator)
+	} else if syntaxType == INTEL {
+		registerAllocator = NewIntelRegisterAllocator(callingConvention)
+		syntax = NewIntelSyntax(registerAllocator)
+	}
+
+	return &AMD64AssemblyEmitter{
 		StringConstantCount: 0,
 		LabelCount:          0,
 		instructions:        []string{},
-		registerAllocator:   NewAMD64SystemVRegisterAllocator().(*ATTSystemVRegisterAllocator),
+		registerAllocator:   registerAllocator,
+		callingConvention:   callingConvention,
+		syntax:              syntax,
 	}
 }

@@ -54,8 +54,8 @@ func main() {
 		// Interpreter.InterpretProgram(program)
 	}
 
-	a := Codegen.NewATTAssemblyEmitter()
+	e := Codegen.NewAMD64AssemblyEmitter(Codegen.INTEL, Codegen.SYSYEM_V)
 	// a.EmitMainFunction()
-	a.EmitLoadIntegerConstant(6)
-	a.EmitInstructions("file.s")
+	e.EmitLoadIntegerConstant(6)
+	e.EmitInstructions("file.s")
 }
