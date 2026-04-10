@@ -43,7 +43,7 @@ type AssemblyEmitter interface {
 	// GetNextGenericLabel() string
 }
 
-type X64AssemblyEmitter struct {
+type AMD64AssemblyEmitter struct {
 	StringConstantCount int
 	LabelCount          int
 
@@ -51,23 +51,23 @@ type X64AssemblyEmitter struct {
 	registerAllocator RegisterAllocator
 }
 
-func (e *X64AssemblyEmitter) AddZeroArgumentInstruction(instruction, source, destination string) {
+func (e *AMD64AssemblyEmitter) AddZeroArgumentInstruction(instruction, source, destination string) {
 	e.instructions = append(e.instructions, fmt.Sprintf("\n%s", instruction))
 }
 
-func (e *X64AssemblyEmitter) AddTwoArgumentInstruction(instruction, source, destination string) {
+func (e *AMD64AssemblyEmitter) AddTwoArgumentInstruction(instruction, source, destination string) {
 	switch _ := e.registerAllocator.(type) {
-	case *IntelMicrosoftX64RegisterAllocator:
-		e.instructions = append(e.instructions, fmt.Sprintf("\n%s %s, %s", destination, source, instruction))
+	case *AMD64SystemVRegisterAllocator:
+		e.instructions = append(e.instructions, fmt.Sprintf("\n%s %s, %s", source, destination, instruction))
 		//case *ATTSystemVX64RegisterAllocator:
 		// e.instructions = append(e.instructions, fmt.Sprintf("\n%s %s, %s", source, destination, instruction))
 	}
 }
 
-func (e *X64AssemblyEmitter) EmitInstructions() {
+func (e *AMD64AssemblyEmitter) EmitInstructions() {
 }
 
-func (e *X64AssemblyEmitter) EmitLoadIntegerConstant(integerConstant int) IntegerRegister {
+func (e *AMD64AssemblyEmitter) EmitLoadIntegerConstant(integerConstant int) IntegerRegister {
 	register := e.registerAllocator.AcquireIntegerRegister()
 	registerName := e.registerAllocator.GetInteger32RegisterName(register)
 	e.AddTwoArgumentInstruction("movl", strconv.Itoa(integerConstant), registerName)
@@ -76,10 +76,10 @@ func (e *X64AssemblyEmitter) EmitLoadIntegerConstant(integerConstant int) Intege
 }
 
 func NewIntelMicrosoftX64AssemblyEmitter() AssemblyEmitter {
-	return &X64AssemblyEmitter{
+	return &AMD64AssemblyEmitter{
 		StringConstantCount: 0,
 		LabelCount:          0,
 		instructions:        []string{},
-		registerAllocator:   NewMicrosoft_X64_RegisterAllocator(),
+		registerAllocator:   NewAMD64SystemVRegisterAllocator(),
 	}
 }
