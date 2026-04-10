@@ -55,8 +55,8 @@ type IntegerRegisterData struct {
 	Integer64RegisterName string
 }
 
-// IntelMicrosoftRegisterAllocator https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170
-type IntelMicrosoftRegisterAllocator struct {
+// IntelMicrosoftX64RegisterAllocator https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170
+type IntelMicrosoftX64RegisterAllocator struct {
 	CallerRegisters []IntegerRegister
 	CalleeRegisters []IntegerRegister
 
@@ -64,7 +64,7 @@ type IntelMicrosoftRegisterAllocator struct {
 	IntegerRegisterMap          map[IntegerRegister]IntegerRegisterData
 }
 
-func (r *IntelMicrosoftRegisterAllocator) AcquireIntegerRegister() IntegerRegister {
+func (r *IntelMicrosoftX64RegisterAllocator) AcquireIntegerRegister() IntegerRegister {
 	for register, registerData := range r.IntegerRegisterMap {
 		if registerData.Allocated {
 			continue
@@ -77,7 +77,7 @@ func (r *IntelMicrosoftRegisterAllocator) AcquireIntegerRegister() IntegerRegist
 	panic("Failed to acquire integer register")
 }
 
-func (r *IntelMicrosoftRegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
+func (r *IntelMicrosoftX64RegisterAllocator) ReleaseIntegerRegister(register IntegerRegister) {
 	if !r.IntegerRegisterMap[register].Allocated {
 		panic("Failed to release integer register, not allocated!")
 	}
@@ -88,11 +88,11 @@ func (r *IntelMicrosoftRegisterAllocator) ReleaseIntegerRegister(register Intege
 	r.IntegerRegisterMap[register] = d
 }
 
-func (r *IntelMicrosoftRegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
+func (r *IntelMicrosoftX64RegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegister) bool {
 	return r.IntegerRegisterMap[register].Allocated
 }
 
-func (r *IntelMicrosoftRegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
+func (r *IntelMicrosoftX64RegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
 	if !r.IsIntegerRegisterAllocated(register) {
 		panic("register not allocated")
 	}
@@ -100,7 +100,7 @@ func (r *IntelMicrosoftRegisterAllocator) GetInteger32RegisterName(register Inte
 	return r.IntegerRegisterMap[register].Integer32RegisterName
 }
 
-func (r *IntelMicrosoftRegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
+func (r *IntelMicrosoftX64RegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
 	if !r.IsIntegerRegisterAllocated(register) {
 		panic("register not allocated")
 	}
@@ -110,7 +110,7 @@ func (r *IntelMicrosoftRegisterAllocator) GetInteger64RegisterName(register Inte
 
 // NewMicrosoft_X64_RegisterAllocator Syntax: Intel
 func NewMicrosoft_X64_RegisterAllocator() RegisterAllocator {
-	return &IntelMicrosoftRegisterAllocator{
+	return &IntelMicrosoftX64RegisterAllocator{
 		[]IntegerRegister{
 			RAX, RCX, RDX, R8, R10, R11,
 		},
