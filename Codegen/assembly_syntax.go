@@ -78,10 +78,10 @@ func (s *ATTSyntax) IMOVL(destination IntegerRegister, source string) string {
 }
 
 func (s *ATTSyntax) MOVQ(destination, source IntegerRegister) string {
-	destName := s.registerAllocator.GetInteger32RegisterName(destination)
-	sourceName := s.registerAllocator.GetInteger32RegisterName(source)
+	destName := s.registerAllocator.GetInteger64RegisterName(destination)
+	sourceName := s.registerAllocator.GetInteger64RegisterName(source)
 
-	return fmt.Sprintf("\tmovl %s, %s", sourceName, destName)
+	return fmt.Sprintf("\tmovq %s, %s", sourceName, destName)
 }
 
 func (s *ATTSyntax) PUSHL(source IntegerRegister) string {
@@ -91,7 +91,7 @@ func (s *ATTSyntax) PUSHL(source IntegerRegister) string {
 }
 
 func (s *ATTSyntax) PUSHQ(source IntegerRegister) string {
-	sourceName := s.registerAllocator.GetInteger32RegisterName(source)
+	sourceName := s.registerAllocator.GetInteger64RegisterName(source)
 
 	return fmt.Sprintf("\tpushq %s", sourceName)
 }
@@ -103,7 +103,7 @@ func (s *ATTSyntax) POPL(destination IntegerRegister) string {
 }
 
 func (s *ATTSyntax) POPQ(destination IntegerRegister) string {
-	destName := s.registerAllocator.GetInteger32RegisterName(destination)
+	destName := s.registerAllocator.GetInteger64RegisterName(destination)
 
 	return fmt.Sprintf("\tpopq %s", destName)
 }

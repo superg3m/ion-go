@@ -56,7 +56,12 @@ func main() {
 
 	e := Codegen.NewAMD64AssemblyEmitter(Codegen.ATT, Codegen.GAS, Codegen.SYSYEM_V)
 	// a.EmitMainFunction()
+	e.AddInstruction(e.GetDirective().ReadOnlyData())
+	e.AddInstruction(e.GetDirective().GlobalObject("test", 4, 4))
+
+	e.AddInstruction(e.GetDirective().Text())
 	e.GetCallingConvention().EmitFunctionPrologue(e, "main")
-	e.EmitLoadIntegerConstant(6)
+	r := e.EmitLoadIntegerConstant(6)
+	e.GetCallingConvention().EmitFunctionEpilogue(e, r)
 	e.EmitInstructions("file.s")
 }

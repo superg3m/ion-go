@@ -27,6 +27,7 @@ type Type interface {
 	isType()
 	Underlying() Type
 	Size() int
+	Align() int
 	IsFunction() bool
 	IsStruct() bool
 	IsPointer() bool

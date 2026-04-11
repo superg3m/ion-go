@@ -1,5 +1,9 @@
 package Codegen
 
+import (
+	"fmt"
+)
+
 type AssemblerType int
 
 const (
@@ -13,34 +17,43 @@ type Directive interface {
 	Data() string
 	BSS() string
 	Text() string
-	Global() string
-	Type(functionName string) string
+	GlobalFunction(functionName string) string
+	GlobalObject(objectName string, alignment, size int) string
 }
 
 type GASDirective struct{}
 
 func (g *GASDirective) ReadOnlyData() string {
-	return ".rodata"
+	return ".section .rodata"
 }
 
 func (g *GASDirective) Data() string {
-	return ".data"
+	return ".section .data"
 }
 
 func (g *GASDirective) BSS() string {
-	return ".bss"
+	return ".section .bss"
 }
 
 func (g *GASDirective) Text() string {
-	return ".text"
+	return ".section .text"
 }
 
-func (g *GASDirective) Global() string {
-	return ".global"
+func (g *GASDirective) GlobalFunction(functionName string) string {
+	return ".type " + functionName + ",@function\n" + ".global " + functionName
 }
 
-func (g *GASDirective) Type(functionName string) string {
-	return ".type " + functionName + ",@function"
+func (g *GASDirective) GlobalObject(objectName string, alignment, size int) string {
+	// .align 32
+	// .type   test, @object
+	// .size   test, 88
+	ret := fmt.Sprintf(".type %s, @object\n", objectName) +
+		fmt.Sprintf(".align %d\n", alignment) +
+		fmt.Sprintf(".global %s\n", objectName) +
+		fmt.Sprintf(".size %s, %d\n", objectName, size) +
+		fmt.Sprintf("%s: .zero %d", objectName, size)
+
+	return ret
 }
 
 func NewGASDirective() Directive {

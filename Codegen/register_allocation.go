@@ -132,7 +132,17 @@ func NewATTRegisterAllocator(convention CallingConvention) RegisterAllocator {
 		},
 
 		map[IntegerRegister]IntegerRegisterData{
+			RAX: {true, "%eax", "%rax"},
+			RBP: {true, "%ebp", "%rbp"},
+			RSP: {true, "%esp", "%rsp"},
+			RDI: {true, "%edi", "%rdi"},
+			RSI: {true, "%esi", "%rdi"},
+			RDX: {true, "%edx", "%rdx"},
+			R8:  {true, "%r8d", "%r8"},
+			R9:  {true, "%r9d", "%r9"},
+
 			RBX: {false, "%edi", "%rdi"},
+			R10: {true, "%r10d", "%r10"},
 			R11: {false, "%r11d", "%r11"},
 			R12: {false, "%r12d", "%r12"},
 			R13: {false, "%r13d", "%r13"},
@@ -219,6 +229,13 @@ func NewIntelRegisterAllocator(cc CallingConvention) RegisterAllocator {
 			R9:  {false, "r9d", "r9"},
 		},
 		map[IntegerRegister]IntegerRegisterData{
+			RAX: {true, "eax", "rax"},
+			RBP: {true, "ebp", "rbp"},
+			RSP: {true, "esp", "rsp"},
+			RDX: {true, "edx", "rdx"},
+			R8:  {true, "r8d", "r8"},
+			R9:  {true, "r9d", "r9"},
+
 			RDI: {false, "edi", "rdi"},
 			RSI: {false, "esi", "rsi"},
 			RBX: {false, "ebx", "rbx"},

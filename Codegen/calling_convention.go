@@ -13,8 +13,8 @@ type CallingConvention interface {
 	EmitFunctionPreCall()                  // push caller registers
 	EmitFunctionCall(functionType TS.Type) // handle params
 
-	EmitFunctionPrologue(e AssemblyEmitter, functionName string) // handle params, push callee registers, 16 byte alignment
-	EmitFunctionEpilogue()                                       // handle params, pop callee registers, ret, leave
+	EmitFunctionPrologue(e AssemblyEmitter, functionName string)      // handle params, push callee registers, 16 byte alignment
+	EmitFunctionEpilogue(e AssemblyEmitter, register IntegerRegister) // handle params, pop callee registers, ret, leave
 
 	EmitFunctionExit()                 // handle params
 	EmitPostCall(functionType TS.Type) // pop caller saved registers
@@ -39,21 +39,32 @@ func (c *CallingConventionSystemV) EmitFunctionCall(functionType TS.Type) {
 func (c *CallingConventionSystemV) EmitFunctionPrologue(e AssemblyEmitter, functionName string) {
 	s := e.GetSyntax()
 	d := e.GetDirective()
-
-	e.AddInstruction(d.Global())
-	e.AddInstruction(d.Type(functionName))
+	
+	e.AddInstruction(d.GlobalFunction(functionName))
 	e.AddInstruction(functionName + ":")
 
 	e.AddInstruction(s.PUSHQ(RBP))
 	e.AddInstruction(s.MOVQ(RBP, RSP))
+
+	for _, register := range c.GetCalleeSavedIntegerRegister() {
+		e.AddInstruction(s.PUSHQ(register))
+	}
 }
 
-func (c *CallingConventionSystemV) EmitFunctionEpilogue() {
+func (c *CallingConventionSystemV) EmitFunctionEpilogue(e AssemblyEmitter, register IntegerRegister) {
+	s := e.GetSyntax()
 
-	// pop callee
+	// TODO(Jovanni): IF THIS FUNCTION HAS A NON-VOID RETURN TYPE THIS SHOULD MOVE SOME VALUE INTO RAX OR XMM0
+	e.AddInstruction(s.MOVL(RAX, register))
 
-	//TODO implement me
-	panic("implement me")
+	// you totally could just not do this if the function name is main...
+	for _, register := range c.GetCalleeSavedIntegerRegister() {
+		e.AddInstruction(s.POPQ(register))
+	}
+
+	// prob not should be abstracted away .............
+	e.AddInstruction("\tleave")
+	e.AddInstruction("\tret")
 }
 
 func (c *CallingConventionSystemV) EmitFunctionExit() {
@@ -100,7 +111,7 @@ func (c *CallingConventionMicrosoftX64) EmitFunctionPrologue(e AssemblyEmitter, 
 	e.AddInstruction(s.MOVQ(RBP, RSP))
 }
 
-func (c *CallingConventionMicrosoftX64) EmitFunctionEpilogue() {
+func (c *CallingConventionMicrosoftX64) EmitFunctionEpilogue(e AssemblyEmitter, register IntegerRegister) {
 	//TODO implement me
 	panic("implement me")
 }

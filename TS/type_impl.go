@@ -3,6 +3,7 @@ package TS
 import (
 	"fmt"
 	"ion-go/Token"
+	"math"
 	"reflect"
 	"unsafe"
 )
@@ -11,6 +12,7 @@ func (b *BaseType) isType()                   {}
 func (b *BaseType) String() string            { return "BaseType" }
 func (b *BaseType) Underlying() Type          { return b.underlying }
 func (b *BaseType) Size() int                 { return 0 }
+func (b *BaseType) Align() int                { return 0 }
 func (b *BaseType) IsInteger() bool           { return false }
 func (b *BaseType) IsString() bool            { return false }
 func (b *BaseType) IsStruct() bool            { return false }
@@ -113,10 +115,12 @@ func (v *VoidType) String() string {
 
 func (b *BoolType) isType()        {}
 func (b *BoolType) Size() int      { return 1 }
+func (b *BoolType) Align() int     { return 1 }
 func (b *BoolType) String() string { return "bool" }
 
-func (c *CharType) isType()   {}
-func (c *CharType) Size() int { return 1 }
+func (c *CharType) isType()    {}
+func (c *CharType) Size() int  { return 1 }
+func (c *CharType) Align() int { return 1 }
 func (c *CharType) String() string {
 	u := "u"
 	if c.Signed {
@@ -128,6 +132,7 @@ func (c *CharType) String() string {
 
 func (i *IntegerType) isType()         {}
 func (i *IntegerType) Size() int       { return i.Bytes }
+func (i *IntegerType) Align() int      { return i.Bytes }
 func (i *IntegerType) IsInteger() bool { return true }
 func (i *IntegerType) String() string {
 	c := "u"
@@ -140,6 +145,7 @@ func (i *IntegerType) String() string {
 
 func (f *FloatType) isType()       {}
 func (f *FloatType) Size() int     { return f.Bytes }
+func (f *FloatType) Align() int    { return f.Bytes }
 func (f *FloatType) IsFloat() bool { return true }
 func (f *FloatType) String() string {
 	return fmt.Sprintf("f%d", f.Bytes*8)
@@ -153,14 +159,37 @@ func (s *StructType) Size() int {
 		return 16
 	}
 
-	totalSizeWithoutPadding := 0
+	totalSizeWithoutFinalPadding := 0
 	for _, m := range s.Members {
-		totalSizeWithoutPadding += m.DeclType.Size()
+		size := m.DeclType.Size()
+		align := m.DeclType.Align()
+
+		totalSizeWithoutFinalPadding = alignUp(totalSizeWithoutFinalPadding, align)
+		totalSizeWithoutFinalPadding += size
 	}
 
-	// TODO(Jovanni): Alignment and padding
-	return totalSizeWithoutPadding
+	return alignUp(totalSizeWithoutFinalPadding, s.Align())
 }
+
+// NOTE(Jovanni): ONLY WORKS if alignment is a power of two
+func alignUp(offset, alignment int) int {
+	return (offset + alignment - 1) & ^(alignment - 1)
+}
+
+// Align alignment = min(max(type_alignment, natural_size), 16 or 32)
+func (s *StructType) Align() int {
+	if s.IsString() {
+		return 16
+	}
+
+	maxTypeAlignment := 0
+	for _, m := range s.Members {
+		maxTypeAlignment = int(math.Max(float64(maxTypeAlignment), float64(m.DeclType.Align())))
+	}
+
+	return int(math.Min(math.Max(float64(maxTypeAlignment), float64(s.Size())), 32))
+}
+
 func (s *StructType) String() string {
 	return fmt.Sprintf(s.StructName)
 }
