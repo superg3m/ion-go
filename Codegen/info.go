@@ -1,6 +1,9 @@
 package Codegen
 
 // https://web.mit.edu/gnu/doc/html/as_7.html#SEC89
+// NASM, MASM, and GAS
+
+// Its Gnu Assembler (GAS)
 
 // Intel Registers
 // ATT Registers
