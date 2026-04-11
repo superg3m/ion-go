@@ -1,5 +1,7 @@
 package Codegen
 
+// https://dev.to/serputov/assembler-basics-4558
+
 // https://web.mit.edu/gnu/doc/html/as_7.html#SEC89
 // NASM, MASM, and GAS
 
@@ -34,3 +36,13 @@ int calleeSavedRegisters[NUM_CALLEE_SAVED] = {EBX, R12D, R13D, R14D, R15D};
 
 // https://wiki.osdev.org/Calling_Conventions#System_V_ABI
 */
+
+// ALRIGHT SO HERE'S WHAT I THINK, I think its reasonable to say
+// theres enough difference between the syntax and assembler, that these should be coupled together
+// however the calling convention can be easily interchanged
+
+// this is a list of everything
+// RegisterList
+
+// this list is everything that's not a parameter register or rax or
+// AllocatableRegisterList []
