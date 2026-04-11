@@ -58,6 +58,12 @@ type IntegerRegisterData struct {
 	Integer64RegisterName string
 }
 
+// this should just be a register allocator
+// it should take in the calling convention
+// from the calling convention derive
+// caller saved registers and callee saved registers
+// then from here you are golden
+
 type ATTRegisterAllocator struct {
 	IntegerParameterRegisterMap map[IntegerRegister]IntegerRegisterData
 	IntegerRegisterMap          map[IntegerRegister]IntegerRegisterData
@@ -102,18 +108,10 @@ func (r *ATTRegisterAllocator) IsIntegerRegisterAllocated(register IntegerRegist
 }
 
 func (r *ATTRegisterAllocator) GetInteger32RegisterName(register IntegerRegister) string {
-	if !r.IsIntegerRegisterAllocated(register) {
-		panic("register not allocated")
-	}
-
 	return r.IntegerRegisterMap[register].Integer32RegisterName
 }
 
 func (r *ATTRegisterAllocator) GetInteger64RegisterName(register IntegerRegister) string {
-	if !r.IsIntegerRegisterAllocated(register) {
-		panic("register not allocated")
-	}
-
 	return r.IntegerRegisterMap[register].Integer64RegisterName
 }
 

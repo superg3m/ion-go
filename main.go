@@ -54,8 +54,9 @@ func main() {
 		// Interpreter.InterpretProgram(program)
 	}
 
-	e := Codegen.NewAMD64AssemblyEmitter(Codegen.INTEL, Codegen.SYSYEM_V)
+	e := Codegen.NewAMD64AssemblyEmitter(Codegen.ATT, Codegen.GAS, Codegen.SYSYEM_V)
 	// a.EmitMainFunction()
+	e.GetCallingConvention().EmitFunctionPrologue(e, "main")
 	e.EmitLoadIntegerConstant(6)
 	e.EmitInstructions("file.s")
 }

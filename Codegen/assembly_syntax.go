@@ -17,6 +17,27 @@ const (
 	ATTEffectiveAddressString   = "%s(%s)"              // register + offset
 )
 
+/*
+var "ATTInteger64Registers []string{
+	"%rax",
+	"%rbp",
+	"%rsp",
+	"%rdi",
+	"%rsi",
+	"%rdx",
+	"%rbx",
+	"%rcx",
+	"%r8",
+	"%r9",
+	"%r10",
+	"%r11",
+	"%r12",
+	"%r13",
+	"%r14",
+	"%r15",
+}
+*/
+
 type Syntax interface {
 	MOVL(destination, source IntegerRegister) string
 	IMOVL(destination IntegerRegister, source string) string

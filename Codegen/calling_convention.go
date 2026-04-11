@@ -38,10 +38,12 @@ func (c *CallingConventionSystemV) EmitFunctionCall(functionType TS.Type) {
 
 func (c *CallingConventionSystemV) EmitFunctionPrologue(e AssemblyEmitter, functionName string) {
 	s := e.GetSyntax()
+	d := e.GetDirective()
 
-	e.AddInstruction("\t.glob " + functionName)
-	e.AddInstruction("\t.type " + functionName + ",@function")
-	e.AddInstruction("\t" + functionName + ":")
+	e.AddInstruction(d.Global())
+	e.AddInstruction(d.Type(functionName))
+	e.AddInstruction(functionName + ":")
+
 	e.AddInstruction(s.PUSHQ(RBP))
 	e.AddInstruction(s.MOVQ(RBP, RSP))
 }

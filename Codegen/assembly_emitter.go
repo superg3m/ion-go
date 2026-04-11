@@ -9,9 +9,10 @@ type AssemblyEmitter interface {
 	EmitLoadIntegerConstant(integerConstant int) IntegerRegister
 	AddInstruction(inst string)
 
+	GetSyntax() Syntax
+	GetDirective() Directive
 	GetRegisterAllocator() RegisterAllocator
 	GetCallingConvention() CallingConvention
-	GetSyntax() Syntax
 
 	// EmitAssignment()
 
@@ -55,10 +56,15 @@ type AMD64AssemblyEmitter struct {
 	instructions []string
 
 	syntax            Syntax
+	directive         Directive
 	registerAllocator RegisterAllocator
 	callingConvention CallingConvention
 
 	// instructions
+}
+
+func (e *AMD64AssemblyEmitter) GetDirective() Directive {
+	return e.directive
 }
 
 func (e *AMD64AssemblyEmitter) GetCallingConvention() CallingConvention {
@@ -95,10 +101,20 @@ func (e *AMD64AssemblyEmitter) EmitLoadIntegerConstant(integerConstant int) Inte
 	return register
 }
 
-func NewAMD64AssemblyEmitter(syntaxType SyntaxType, cc CallingConventionType) AssemblyEmitter {
+func NewAMD64AssemblyEmitter(syntaxType SyntaxType, assemblerType AssemblerType, cc CallingConventionType) AssemblyEmitter {
+	var syntax Syntax
+	var directive Directive
 	var registerAllocator RegisterAllocator
 	var callingConvention CallingConvention
-	var syntax Syntax
+
+	if assemblerType == GAS {
+		directive = NewGASDirective()
+	} else if assemblerType == MASM {
+
+	} else if assemblerType == NASM {
+
+	}
+
 	if cc == SYSYEM_V {
 		callingConvention = NewSystemVCallingConvention()
 	} else if cc == MICROSOFT_X64 {
@@ -117,8 +133,9 @@ func NewAMD64AssemblyEmitter(syntaxType SyntaxType, cc CallingConventionType) As
 		StringConstantCount: 0,
 		LabelCount:          0,
 		instructions:        []string{},
+		syntax:              syntax,
+		directive:           directive,
 		registerAllocator:   registerAllocator,
 		callingConvention:   callingConvention,
-		syntax:              syntax,
 	}
 }
