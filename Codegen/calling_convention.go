@@ -1,6 +1,9 @@
 package Codegen
 
-import "ion-go/TS"
+import (
+	"ion-go/TS"
+	"slices"
+)
 
 type CallingConventionType int
 
@@ -39,7 +42,7 @@ func (c *CallingConventionSystemV) EmitFunctionCall(functionType TS.Type) {
 func (c *CallingConventionSystemV) EmitFunctionPrologue(e AssemblyEmitter, functionName string) {
 	s := e.GetSyntax()
 	d := e.GetDirective()
-	
+
 	e.AddInstruction(d.GlobalFunction(functionName))
 	e.AddInstruction(functionName + ":")
 
@@ -58,8 +61,11 @@ func (c *CallingConventionSystemV) EmitFunctionEpilogue(e AssemblyEmitter, regis
 	e.AddInstruction(s.MOVL(RAX, register))
 
 	// you totally could just not do this if the function name is main...
-	for _, register := range c.GetCalleeSavedIntegerRegister() {
-		e.AddInstruction(s.POPQ(register))
+	calleeRegisters := c.GetCalleeSavedIntegerRegister()
+	slices.Reverse(calleeRegisters)
+
+	for _, r := range calleeRegisters {
+		e.AddInstruction(s.POPQ(r))
 	}
 
 	// prob not should be abstracted away .............

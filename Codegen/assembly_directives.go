@@ -2,6 +2,7 @@ package Codegen
 
 import (
 	"fmt"
+	"ion-go/TS"
 )
 
 type AssemblerType int
@@ -18,7 +19,7 @@ type Directive interface {
 	BSS() string
 	Text() string
 	GlobalFunction(functionName string) string
-	GlobalObject(objectName string, alignment, size int) string
+	GlobalObject(objectName string, t TS.Type) string
 }
 
 type GASDirective struct{}
@@ -43,15 +44,12 @@ func (g *GASDirective) GlobalFunction(functionName string) string {
 	return ".type " + functionName + ",@function\n" + ".global " + functionName
 }
 
-func (g *GASDirective) GlobalObject(objectName string, alignment, size int) string {
-	// .align 32
-	// .type   test, @object
-	// .size   test, 88
-	ret := fmt.Sprintf(".type %s, @object\n", objectName) +
-		fmt.Sprintf(".align %d\n", alignment) +
+func (g *GASDirective) GlobalObject(objectName string, t TS.Type) string {
+	ret := fmt.Sprintf(".align %d\n", t.Align()) +
+		fmt.Sprintf(".type %s, @object\n", objectName) +
 		fmt.Sprintf(".global %s\n", objectName) +
-		fmt.Sprintf(".size %s, %d\n", objectName, size) +
-		fmt.Sprintf("%s: .zero %d", objectName, size)
+		fmt.Sprintf(".size %s, %d\n", objectName, t.Size()) +
+		fmt.Sprintf("%s:\n\t.zero %d", objectName, t.Size())
 
 	return ret
 }

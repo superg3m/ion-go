@@ -6,6 +6,8 @@ import (
 	"ion-go/Codegen"
 	"ion-go/Lexer"
 	"ion-go/Parser"
+	"ion-go/TS"
+	"ion-go/Token"
 	"ion-go/TypeChecker"
 	"os"
 	"path"
@@ -55,11 +57,22 @@ func main() {
 	}
 
 	e := Codegen.NewAMD64AssemblyEmitter(Codegen.ATT, Codegen.GAS, Codegen.SYSYEM_V)
-	// a.EmitMainFunction()
+
+	personStructType := TS.NewTypeStruct("Person", []TS.Member{
+		{Tok: Token.CreateToken(Token.IDENTIFIER, "a", 0), DeclType: TS.NewTypeInteger(true, 1)},
+		{Tok: Token.CreateToken(Token.IDENTIFIER, "b", 0), DeclType: TS.NewTypeInteger(true, 4)},
+		{Tok: Token.CreateToken(Token.IDENTIFIER, "c", 0), DeclType: TS.NewTypeInteger(true, 1)},
+		{Tok: Token.CreateToken(Token.IDENTIFIER, "p", 0), DeclType: nil},
+	})
+	s := personStructType.(*TS.StructType)
+	s.Members[3] = TS.Member{Tok: Token.CreateToken(Token.IDENTIFIER, "p", 0), DeclType: TS.AddPointer(personStructType)}
+
 	e.AddInstruction(e.GetDirective().ReadOnlyData())
-	e.AddInstruction(e.GetDirective().GlobalObject("test", 4, 4))
+	e.AddInstruction(e.GetDirective().GlobalObject("p1", personStructType))
 
 	e.AddInstruction(e.GetDirective().Text())
+	e.GetCallingConvention().EmitFunctionPrologue(e, "CreatePerson")
+	
 	e.GetCallingConvention().EmitFunctionPrologue(e, "main")
 	r := e.EmitLoadIntegerConstant(6)
 	e.GetCallingConvention().EmitFunctionEpilogue(e, r)

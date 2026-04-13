@@ -5,7 +5,6 @@ import (
 	"ion-go/Token"
 	"math"
 	"reflect"
-	"unsafe"
 )
 
 func (b *BaseType) isType()                   {}
@@ -154,21 +153,22 @@ func (f *FloatType) String() string {
 func (s *StructType) isType()        {}
 func (s *StructType) IsString() bool { return s.StructName == "String" } // very hacky way to do this
 func (s *StructType) IsStruct() bool { return true }
+
 func (s *StructType) Size() int {
 	if s.IsString() {
 		return 16
 	}
 
-	totalSizeWithoutFinalPadding := 0
+	offset := 0
 	for _, m := range s.Members {
 		size := m.DeclType.Size()
 		align := m.DeclType.Align()
 
-		totalSizeWithoutFinalPadding = alignUp(totalSizeWithoutFinalPadding, align)
-		totalSizeWithoutFinalPadding += size
+		offset = alignUp(offset, align)
+		offset += size
 	}
 
-	return alignUp(totalSizeWithoutFinalPadding, s.Align())
+	return alignUp(offset, s.Align())
 }
 
 // NOTE(Jovanni): ONLY WORKS if alignment is a power of two
@@ -176,7 +176,6 @@ func alignUp(offset, alignment int) int {
 	return (offset + alignment - 1) & ^(alignment - 1)
 }
 
-// Align alignment = min(max(type_alignment, natural_size), 16 or 32)
 func (s *StructType) Align() int {
 	if s.IsString() {
 		return 16
@@ -187,15 +186,17 @@ func (s *StructType) Align() int {
 		maxTypeAlignment = int(math.Max(float64(maxTypeAlignment), float64(m.DeclType.Align())))
 	}
 
-	return int(math.Min(math.Max(float64(maxTypeAlignment), float64(s.Size())), 32))
+	return int(math.Min(float64(maxTypeAlignment), 32))
+	// return int(math.Min(math.Max(float64(maxTypeAlignment), float64(s.Size())), 32))
 }
 
 func (s *StructType) String() string {
 	return fmt.Sprintf(s.StructName)
 }
 
-func (a *AliasType) isType()   {}
-func (a *AliasType) Size() int { return a.Underlying().Size() }
+func (a *AliasType) isType()    {}
+func (a *AliasType) Size() int  { return a.Underlying().Size() }
+func (a *AliasType) Align() int { return a.Underlying().Align() }
 func (a *AliasType) String() string {
 	return fmt.Sprintf(a.AliasName)
 }
@@ -219,22 +220,17 @@ func (arr *StaticArrayType) isType()                   {}
 func (arr *StaticArrayType) IsArray() bool             { return true }
 func (arr *StaticArrayType) IsFixedSizeArray() bool    { return arr.Count > 0 }
 func (arr *StaticArrayType) IsInferredSizeArray() bool { return arr.Count == 0 }
-func (arr *StaticArrayType) Size() int {
-	return arr.Underlying().Size() * arr.Count
-}
+func (arr *StaticArrayType) Size() int                 { return arr.Underlying().Size() * arr.Count }
+func (arr *StaticArrayType) Align() int                { return arr.Underlying().Align() }
 func (arr *StaticArrayType) String() string {
 	return fmt.Sprintf("[%d]", arr.Count) + arr.Underlying().String()
 }
 
 func (p *PointerType) isType()         {}
 func (p *PointerType) IsPointer() bool { return true }
-func (p *PointerType) Size() int {
-	var t *int = nil
-	return int(unsafe.Sizeof(t))
-}
-func (p *PointerType) String() string {
-	return "*" + p.Underlying().String()
-}
+func (p *PointerType) Size() int       { return 8 } // just assume 64-bit architecture
+func (p *PointerType) Align() int      { return 8 } // just assume 64-bit architecture
+func (p *PointerType) String() string  { return "*" + p.Underlying().String() }
 
 func NewTypeVoid() Type {
 	return &VoidType{
